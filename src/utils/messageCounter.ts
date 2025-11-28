@@ -1,4 +1,13 @@
-import { TextChannel, ForumChannel, ThreadChannel, Message } from "discord.js";
+import { TextChannel, ForumChannel, ThreadChannel, Message, DiscordAPIError } from "discord.js";
+
+const RATE_LIMIT_DELAY_MS = 100;
+
+/**
+ * レート制限を考慮した遅延処理
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /**
  * テキストチャンネル内のメッセージ数をカウントする
@@ -8,17 +17,38 @@ export async function countMessagesInChannel(
 ): Promise<number> {
   let count = 0;
   let lastId: string | undefined;
+  let retryCount = 0;
+  const maxRetries = 3;
 
   while (true) {
-    const messages = await channel.messages.fetch({
-      limit: 100,
-      ...(lastId && { before: lastId }),
-    });
+    try {
+      const messages = await channel.messages.fetch({
+        limit: 100,
+        ...(lastId && { before: lastId }),
+      });
 
-    if (messages.size === 0) break;
+      if (messages.size === 0) break;
 
-    count += messages.size;
-    lastId = messages.last()?.id;
+      count += messages.size;
+      lastId = messages.last()?.id;
+      retryCount = 0;
+
+      await delay(RATE_LIMIT_DELAY_MS);
+    } catch (error) {
+      if (error instanceof DiscordAPIError && error.status === 429) {
+        const retryAfter = (error as DiscordAPIError & { retryAfter?: number }).retryAfter ?? 1000;
+        await delay(retryAfter);
+        continue;
+      }
+
+      if (retryCount < maxRetries) {
+        retryCount++;
+        await delay(RATE_LIMIT_DELAY_MS * Math.pow(2, retryCount));
+        continue;
+      }
+
+      throw error;
+    }
   }
 
   return count;
@@ -49,20 +79,41 @@ export async function countUserMessagesInChannel(
 ): Promise<number> {
   let count = 0;
   let lastId: string | undefined;
+  let retryCount = 0;
+  const maxRetries = 3;
 
   while (true) {
-    const messages = await channel.messages.fetch({
-      limit: 100,
-      ...(lastId && { before: lastId }),
-    });
+    try {
+      const messages = await channel.messages.fetch({
+        limit: 100,
+        ...(lastId && { before: lastId }),
+      });
 
-    if (messages.size === 0) break;
+      if (messages.size === 0) break;
 
-    const userMessages = messages.filter(
-      (msg: Message) => msg.author.id === userId
-    );
-    count += userMessages.size;
-    lastId = messages.last()?.id;
+      const userMessages = messages.filter(
+        (msg: Message) => msg.author.id === userId
+      );
+      count += userMessages.size;
+      lastId = messages.last()?.id;
+      retryCount = 0;
+
+      await delay(RATE_LIMIT_DELAY_MS);
+    } catch (error) {
+      if (error instanceof DiscordAPIError && error.status === 429) {
+        const retryAfter = (error as DiscordAPIError & { retryAfter?: number }).retryAfter ?? 1000;
+        await delay(retryAfter);
+        continue;
+      }
+
+      if (retryCount < maxRetries) {
+        retryCount++;
+        await delay(RATE_LIMIT_DELAY_MS * Math.pow(2, retryCount));
+        continue;
+      }
+
+      throw error;
+    }
   }
 
   return count;
