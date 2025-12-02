@@ -1,13 +1,5 @@
 import { TextChannel, ForumChannel, ThreadChannel, Message, DiscordAPIError } from "discord.js";
-
-const RATE_LIMIT_DELAY_MS = 100;
-
-/**
- * レート制限を考慮した遅延処理
- */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { RATE_LIMIT_DELAY_MS, delay } from "./misc";
 
 /**
  * テキストチャンネル内のメッセージ数をカウントする

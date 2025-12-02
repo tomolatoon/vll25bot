@@ -25,7 +25,7 @@ Discord.jsを使用したDiscord Botです。チャンネルやフォーラム�
 
 2. 依存関係をインストール
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. 環境変数を設定
@@ -36,19 +36,19 @@ Discord.jsを使用したDiscord Botです。チャンネルやフォーラム�
 
 4. ビルド
    ```bash
-   npm run build
+   pnpm build
    ```
 
 5. 起動
    ```bash
-   npm start
+   pnpm start
    ```
 
 ### 開発
 
 開発時はts-nodeを使用して直接実行できます：
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ## コマンド
@@ -87,6 +87,3 @@ npm run dev
    - Read Message History
 5. 生成された URL を使用してサーバーに Bot を招待
 
-## ライセンス
-
-ISC
