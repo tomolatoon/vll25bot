@@ -1,0 +1,82 @@
+/**
+ * index.ts - Discord Bot のメインエントリーポイント
+ *
+ * Botの起動とイベントハンドリングを担当します。
+ */
+
+import {
+    Client,
+    GatewayIntentBits,
+    Collection,
+    type ChatInputCommandInteraction,
+} from "discord.js";
+import { registerCommands } from "./commands";
+import type { Command } from "./types";
+
+// discord.js の Client 型を拡張
+declare module "discord.js" {
+    interface Client {
+        commands: Collection<string, Command>;
+    }
+}
+
+// Discord クライアントを作成
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ],
+});
+
+// コマンドを登録
+client.commands = new Collection();
+registerCommands(client);
+
+// Bot起動時（v15対応: ready → clientReady）
+client.once("clientReady", () => {
+    console.log(`✅ ${client.user?.tag} がオンラインになりました！`);
+    console.log(`🤖 ${client.guilds.cache.size} サーバーに接続中`);
+});
+
+// スラッシュコマンド実行時
+client.on("interactionCreate", async (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const command = client.commands.get(interaction.commandName);
+    if (!command) {
+        console.error(`コマンド ${interaction.commandName} が見つかりません`);
+        return;
+    }
+
+    try {
+        await command.execute(interaction as ChatInputCommandInteraction);
+    } catch (error) {
+        console.error("コマンド実行エラー:", error);
+        const reply = {
+            content: "コマンドの実行中にエラーが発生しました。",
+            ephemeral: true,
+        };
+
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(reply);
+        } else {
+            await interaction.reply(reply);
+        }
+    }
+});
+
+// Graceful shutdown（Ctrl+C でオフライン表示を即座に反映）
+const shutdown = () => {
+    console.log("🛑 Botをシャットダウン中...");
+    client.destroy().then(() => {
+        console.log("👋 オフラインになりました");
+        process.exit(0);
+    });
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+// ログイン（Bunは.envを自動で読み込む）
+client.login(Bun.env.DISCORD_TOKEN);
