@@ -8,13 +8,14 @@
  */
 
 import type { Client } from "discord.js";
+import { kanwa } from "./kanwa";
 import { omikuji } from "./omikuji";
 import { ping } from "./ping";
 import { remind } from "./remind";
 import type { Command } from "../types";
 
 // コマンド一覧（新しいコマンドはここに追加）
-const commands: Command[] = [omikuji, ping, remind];
+const commands: Command[] = [kanwa, omikuji, ping, remind];
 
 /** クライアントにコマンドを登録 */
 export function registerCommands(client: Client): void {
