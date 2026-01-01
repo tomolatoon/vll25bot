@@ -10,6 +10,7 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    MessageFlags,
     type ChatInputCommandInteraction,
     type ButtonInteraction,
     type TextChannel,
@@ -133,7 +134,7 @@ async function handleAdd(
         await interaction.reply({
             content:
                 "❌ 日時の形式を正しく入力してください。\n例: 2026/01/15 9:00, 明日 9:00, 1分後 など",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -142,7 +143,7 @@ async function handleAdd(
     if (remindAt <= new Date()) {
         await interaction.reply({
             content: "❌ 未来の日時を指定してください。",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -159,7 +160,7 @@ async function handleAdd(
     if (!reminder) {
         await interaction.reply({
             content: "❌ リマインダーの登録に失敗しました。",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -171,7 +172,9 @@ async function handleAdd(
         .setStyle(ButtonStyle.Danger)
         .setEmoji("🗑️");
 
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(cancelButton);
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        cancelButton
+    );
 
     await interaction.reply({
         content:
@@ -181,7 +184,6 @@ async function handleAdd(
             `📢 **チャンネル**: <#${targetChannel.id}>\n` +
             `🆔 **ID**: \`${reminder.id}\``,
         components: [row],
-        ephemeral: false,
     });
 }
 
@@ -195,20 +197,23 @@ async function handleList(
         (interaction.channel as TextChannel);
     // user 省略時は全員のリマインダーを表示
     const targetUser = interaction.options.getUser("user");
-    
+
     const reminders = getRemindersByGuild(guildId).filter(
-        (r) => r.channelId === targetChannel.id && (targetUser === null || r.createdBy === targetUser.id)
+        (r) =>
+            r.channelId === targetChannel.id &&
+            (targetUser === null || r.createdBy === targetUser.id)
     );
 
     // フィルター条件の説明テキストを作成
-    const filterDesc = targetUser === null
-        ? `<#${targetChannel.id}> の`
-        : `<#${targetChannel.id}> の <@${targetUser.id}> が登録した`;
+    const filterDesc =
+        targetUser === null
+            ? `<#${targetChannel.id}> の`
+            : `<#${targetChannel.id}> の <@${targetUser.id}> が登録した`;
 
     if (reminders.length === 0) {
         await interaction.reply({
             content: `📭 ${filterDesc}リマインダーはありません。`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -219,14 +224,18 @@ async function handleList(
             return (
                 `🆔 \`${r.id}\`\n` +
                 `　📅 ${date.toLocaleString("ja-JP")}\n` +
-                `　📝 ${r.message.length > 30 ? r.message.substring(0, 30) + "..." : r.message}`
+                `　📝 ${
+                    r.message.length > 30
+                        ? r.message.substring(0, 30) + "..."
+                        : r.message
+                }`
             );
         })
         .join("\n\n");
 
     await interaction.reply({
         content: `📋 **${filterDesc}リマインダー（${reminders.length}件）**\n\n${list}`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
     });
 }
 
@@ -236,7 +245,7 @@ async function handleListAll(
 ): Promise<void> {
     const guildId = interaction.guildId!;
     const userId = interaction.user.id;
-    
+
     const reminders = getRemindersByGuild(guildId).filter(
         (r) => r.createdBy === userId
     );
@@ -244,7 +253,7 @@ async function handleListAll(
     if (reminders.length === 0) {
         await interaction.reply({
             content: `📭 このサーバーにあなたのリマインダーはありません。`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -256,15 +265,60 @@ async function handleListAll(
                 `🆔 \`${r.id}\`\n` +
                 `　📅 ${date.toLocaleString("ja-JP")}\n` +
                 `　📢 <#${r.channelId}>\n` +
-                `　📝 ${r.message.length > 30 ? r.message.substring(0, 30) + "..." : r.message}`
+                `　📝 ${
+                    r.message.length > 30
+                        ? r.message.substring(0, 30) + "..."
+                        : r.message
+                }`
             );
         })
         .join("\n\n");
 
     await interaction.reply({
         content: `📋 **あなたのリマインダー（${reminders.length}件）**\n\n${list}`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
     });
+}
+
+/** リマインダー解除の結果 */
+type CancelReminderResult =
+    | { success: true }
+    | {
+          success: false;
+          reason: "not_found" | "wrong_guild" | "not_owner" | "already_done";
+      };
+
+/**
+ * リマインダーを解除する共通処理
+ * @param id リマインダーID
+ * @param userId 実行者のユーザーID
+ * @param guildId ギルドID（コマンドからの削除時のみ指定）
+ */
+function cancelReminder(
+    id: string,
+    userId: string,
+    guildId?: string
+): CancelReminderResult {
+    const reminder = getReminderById(id);
+
+    if (!reminder) {
+        return { success: false, reason: "not_found" };
+    }
+
+    if (guildId && reminder.guildId !== guildId) {
+        return { success: false, reason: "wrong_guild" };
+    }
+
+    if (reminder.createdBy !== userId) {
+        return { success: false, reason: "not_owner" };
+    }
+
+    const stopped = stopReminder(id);
+    if (!stopped) {
+        return { success: false, reason: "already_done" };
+    }
+
+    return { success: true };
 }
 
 /** リマインダー削除 */
@@ -272,23 +326,30 @@ async function handleRemove(
     interaction: ChatInputCommandInteraction
 ): Promise<void> {
     const id = interaction.options.getString("id", true);
+    const result = cancelReminder(
+        id,
+        interaction.user.id,
+        interaction.guildId!
+    );
 
-    // ギルド内のリマインダーのみ削除可能
-    const reminder = getReminderById(id);
-
-    if (!reminder || reminder.guildId !== interaction.guildId) {
+    if (!result.success) {
+        const errorMessages = {
+            not_found:
+                "指定されたIDのリマインダーがこのサーバーに見つかりません。",
+            wrong_guild:
+                "指定されたIDのリマインダーがこのサーバーに見つかりません。",
+            not_owner: "自分が登録したリマインダーのみ解除できます。",
+            already_done: "既に実行済みか解除済みです。",
+        };
         await interaction.reply({
-            content: "❌ 指定されたIDのリマインダーがこのサーバーに見つかりません。",
-            ephemeral: true,
+            content: `❌ ${errorMessages[result.reason]}`,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
-    stopReminder(id);
-
     await interaction.reply({
         content: `🗑️ リマインダー \`${id}\` を解除しました。`,
-        ephemeral: false,
     });
 }
 
@@ -297,17 +358,27 @@ export async function handleRemindCancelButton(
     interaction: ButtonInteraction,
     id: string
 ): Promise<void> {
-    const success = stopReminder(id);
+    const result = cancelReminder(id, interaction.user.id);
 
-    if (success) {
-        await interaction.update({
-            content: `🗑️ リマインダー \`${id}\` を解除しました。`,
-            components: [],
-        });
-    } else {
-        await interaction.reply({
-            content: "✅ 既に実行済みか解除済みです。",
-            ephemeral: true,
-        });
+    if (!result.success) {
+        if (result.reason === "not_owner") {
+            await interaction.reply({
+                content: "❌ 自分が登録したリマインダーのみ解除できます。",
+                flags: MessageFlags.Ephemeral,
+            });
+        } else {
+            // not_found, already_done の場合
+            // wrong_guild は発生しない想定
+            await interaction.update({
+                content: `❓ リマインダー \`${id}\` は既に解除済みです。`,
+                components: [],
+            });
+        }
+        return;
     }
+
+    await interaction.update({
+        content: `🗑️ リマインダー \`${id}\` を解除しました。`,
+        components: [],
+    });
 }

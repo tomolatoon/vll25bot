@@ -82,14 +82,15 @@ client.on("interactionCreate", async (interaction) => {
     }
 });
 
+// Graceful shutdown（Ctrl+C でオフライン表示を即座に反映）
+let isShuttingDown = false;
+const shutdown = () => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log("🛑 Botをシャットダウン中...");
     // リマインダーを保存してタスクを停止
     saveReminders();
     stopReminders();
-
-
-// Graceful shutdown（Ctrl+C でオフライン表示を即座に反映）
-const shutdown = () => {
-    console.log("🛑 Botをシャットダウン中...");
     client.destroy().then(() => {
         console.log("👋 オフラインになりました");
         process.exit(0);

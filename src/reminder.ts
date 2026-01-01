@@ -173,8 +173,8 @@ class Reminder {
         if (!existsSync(REMINDER_FILE)) return [];
         try {
             return JSON.parse(readFileSync(REMINDER_FILE, "utf-8"));
-        } catch {
-            console.error("❌ リマインダーファイル読み込みエラー");
+        } catch (error) {
+            console.error("❌ リマインダーファイル読み込みエラー:", error);
             return [];
         }
     }
