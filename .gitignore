@@ -16,3 +16,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# リマインダーデータ
+reminders.json

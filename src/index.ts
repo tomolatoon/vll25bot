@@ -11,6 +11,8 @@ import {
     type ChatInputCommandInteraction,
 } from "discord.js";
 import { registerCommands } from "./commands";
+import { handleRemindCancelButton, BUTTON_ID_REMIND_CANCEL } from "./commands/remind";
+import { setClient, restoreReminders, saveReminders, stopReminders } from "./reminder";
 import type { Command } from "./types";
 
 // discord.js の Client 型を拡張
@@ -37,10 +39,24 @@ registerCommands(client);
 client.once("clientReady", () => {
     console.log(`✅ ${client.user?.tag} がオンラインになりました！`);
     console.log(`🤖 ${client.guilds.cache.size} サーバーに接続中`);
+
+    // リマインダーにクライアントを設定し、保存されたリマインダーを復元
+    setClient(client);
+    restoreReminders();
 });
 
 // スラッシュコマンド実行時
 client.on("interactionCreate", async (interaction) => {
+    // ボタンクリック処理
+    if (interaction.isButton()) {
+        const [action, id] = interaction.customId.split(":");
+
+        if (action === BUTTON_ID_REMIND_CANCEL && id) {
+            await handleRemindCancelButton(interaction, id);
+        }
+        return;
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);
@@ -65,6 +81,11 @@ client.on("interactionCreate", async (interaction) => {
         }
     }
 });
+
+    // リマインダーを保存してタスクを停止
+    saveReminders();
+    stopReminders();
+
 
 // Graceful shutdown（Ctrl+C でオフライン表示を即座に反映）
 const shutdown = () => {
