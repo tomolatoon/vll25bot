@@ -5,24 +5,24 @@
  */
 
 import {
-    SlashCommandBuilder,
-    ChannelType,
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle,
-    MessageFlags,
-    type ChatInputCommandInteraction,
     type ButtonInteraction,
+    ButtonStyle,
+    ChannelType,
+    type ChatInputCommandInteraction,
+    MessageFlags,
+    SlashCommandBuilder,
     type TextChannel,
 } from "discord.js";
-import type { Command } from "../types";
+import { parseFutureDateTime } from "../lib/parser/date-parser";
 import {
     createReminder,
     getReminderById,
     getRemindersByGuild,
     stopReminder,
 } from "../reminder";
-import { parseFutureDateTime } from "../utils";
+import type { Command } from "../types";
 
 /** リマインダー解除ボタンのIDプレフィックス */
 export const BUTTON_ID_REMIND_CANCEL = "remind_cancel";
@@ -39,25 +39,25 @@ export const remind: Command = {
                     option
                         .setName("message")
                         .setDescription("送信するメッセージ")
-                        .setRequired(true)
+                        .setRequired(true),
                 )
                 .addStringOption((option) =>
                     option
                         .setName("datetime")
                         .setDescription(
-                            "送信日時 (例: 2026/01/15 9:00, 明日 9:00, 1分後 など)"
+                            "送信日時 (例: 2026/01/15 9:00, 明日 9:00, 1分後 など)",
                         )
-                        .setRequired(true)
+                        .setRequired(true),
                 )
                 .addChannelOption((option) =>
                     option
                         .setName("channel")
                         .setDescription(
-                            "送信先チャンネル（省略で現在のチャンネル）"
+                            "送信先チャンネル（省略で現在のチャンネル）",
                         )
                         .addChannelTypes(ChannelType.GuildText)
-                        .setRequired(false)
-                )
+                        .setRequired(false),
+                ),
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -67,24 +67,24 @@ export const remind: Command = {
                     option
                         .setName("channel")
                         .setDescription(
-                            "表示するリマインダーの送信先チャンネル（省略で現在のチャンネル）"
+                            "表示するリマインダーの送信先チャンネル（省略で現在のチャンネル）",
                         )
                         .addChannelTypes(ChannelType.GuildText)
-                        .setRequired(false)
+                        .setRequired(false),
                 )
                 .addUserOption((option) =>
                     option
                         .setName("user")
                         .setDescription(
-                            "表示するリマインダーの作成者（省略で全員）"
+                            "表示するリマインダーの作成者（省略で全員）",
                         )
-                        .setRequired(false)
-                )
+                        .setRequired(false),
+                ),
         )
         .addSubcommand((subcommand) =>
             subcommand
                 .setName("list_all")
-                .setDescription("ギルド内の自分のリマインダーを全て表示します")
+                .setDescription("ギルド内の自分のリマインダーを全て表示します"),
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -94,8 +94,8 @@ export const remind: Command = {
                     option
                         .setName("id")
                         .setDescription("削除するリマインダーのID")
-                        .setRequired(true)
-                )
+                        .setRequired(true),
+                ),
         ),
 
     async execute(interaction: ChatInputCommandInteraction) {
@@ -120,7 +120,7 @@ export const remind: Command = {
 
 /** リマインダー追加 */
 async function handleAdd(
-    interaction: ChatInputCommandInteraction
+    interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     const message = interaction.options.getString("message", true);
     const datetimeStr = interaction.options.getString("datetime", true);
@@ -154,7 +154,7 @@ async function handleAdd(
         message,
         remindAt,
         interaction.user.id,
-        interaction.guildId!
+        interaction.guildId!,
     );
 
     if (!reminder) {
@@ -173,23 +173,18 @@ async function handleAdd(
         .setEmoji("🗑️");
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        cancelButton
+        cancelButton,
     );
 
     await interaction.reply({
-        content:
-            `✅ リマインダーを登録しました！\n\n` +
-            `📅 **日時**: ${remindAt.toLocaleString("ja-JP")}\n` +
-            `📝 **メッセージ**: ${message}\n` +
-            `📢 **チャンネル**: <#${targetChannel.id}>\n` +
-            `🆔 **ID**: \`${reminder.id}\``,
+        content: `✅ リマインダーを登録しました！\n\n📅 **日時**: ${remindAt.toLocaleString("ja-JP")}\n📝 **メッセージ**: ${message}\n📢 **チャンネル**: <#${targetChannel.id}>\n🆔 **ID**: \`${reminder.id}\``,
         components: [row],
     });
 }
 
 /** リマインダー一覧 (チャンネル指定) */
 async function handleList(
-    interaction: ChatInputCommandInteraction
+    interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     const guildId = interaction.guildId!;
     const targetChannel =
@@ -201,7 +196,7 @@ async function handleList(
     const reminders = getRemindersByGuild(guildId).filter(
         (r) =>
             r.channelId === targetChannel.id &&
-            (targetUser === null || r.createdBy === targetUser.id)
+            (targetUser === null || r.createdBy === targetUser.id),
     );
 
     // フィルター条件の説明テキストを作成
@@ -226,7 +221,7 @@ async function handleList(
                 `　📅 ${date.toLocaleString("ja-JP")}\n` +
                 `　📝 ${
                     r.message.length > 30
-                        ? r.message.substring(0, 30) + "..."
+                        ? `${r.message.substring(0, 30)}...`
                         : r.message
                 }`
             );
@@ -241,18 +236,18 @@ async function handleList(
 
 /** リマインダー一覧 (ギルド全体) */
 async function handleListAll(
-    interaction: ChatInputCommandInteraction
+    interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     const guildId = interaction.guildId!;
     const userId = interaction.user.id;
 
     const reminders = getRemindersByGuild(guildId).filter(
-        (r) => r.createdBy === userId
+        (r) => r.createdBy === userId,
     );
 
     if (reminders.length === 0) {
         await interaction.reply({
-            content: `📭 このサーバーにあなたのリマインダーはありません。`,
+            content: "📭 このサーバーにあなたのリマインダーはありません。",
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -267,7 +262,7 @@ async function handleListAll(
                 `　📢 <#${r.channelId}>\n` +
                 `　📝 ${
                     r.message.length > 30
-                        ? r.message.substring(0, 30) + "..."
+                        ? `${r.message.substring(0, 30)}...`
                         : r.message
                 }`
             );
@@ -297,7 +292,7 @@ type CancelReminderResult =
 function cancelReminder(
     id: string,
     userId: string,
-    guildId?: string
+    guildId?: string,
 ): CancelReminderResult {
     const reminder = getReminderById(id);
 
@@ -323,13 +318,13 @@ function cancelReminder(
 
 /** リマインダー削除 */
 async function handleRemove(
-    interaction: ChatInputCommandInteraction
+    interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     const id = interaction.options.getString("id", true);
     const result = cancelReminder(
         id,
         interaction.user.id,
-        interaction.guildId!
+        interaction.guildId!,
     );
 
     if (!result.success) {
@@ -356,7 +351,7 @@ async function handleRemove(
 /** リマインダー解除ボタンの処理 */
 export async function handleRemindCancelButton(
     interaction: ButtonInteraction,
-    id: string
+    id: string,
 ): Promise<void> {
     const result = cancelReminder(id, interaction.user.id);
 

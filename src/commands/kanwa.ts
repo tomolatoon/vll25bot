@@ -3,8 +3,8 @@
  */
 
 import {
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
+    SlashCommandBuilder,
     type TextChannel,
 } from "discord.js";
 import type { Command } from "../types";
@@ -17,19 +17,19 @@ export const kanwa: Command = {
             option
                 .setName("space")
                 .setDescription("いくつ全角スペースを入れるか")
-                .setRequired(false)
+                .setRequired(false),
         )
         .addStringOption((option) =>
             option
                 .setName("reason")
                 .setDescription("閑話休題を入れる理由")
-                .setRequired(false)
+                .setRequired(false),
         )
         .addIntegerOption((option) =>
             option
                 .setName("times")
                 .setDescription("何回連投するか（最大5回）")
-                .setRequired(false)
+                .setRequired(false),
         ),
 
     async execute(interaction: ChatInputCommandInteraction) {

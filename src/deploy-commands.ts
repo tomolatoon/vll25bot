@@ -44,10 +44,15 @@ const deployToGlobal = async () => {
 };
 
 const deployToGuild = async (guild_id: string) => {
-    console.log(`🔄 ${commands.length}個のコマンドをギルド（${guild_id}）に登録中...`);
-    const data = (await rest.put(Routes.applicationGuildCommands(CLIENT_ID, guild_id), {
-        body: commands,
-    })) as unknown[];
+    console.log(
+        `🔄 ${commands.length}個のコマンドをギルド（${guild_id}）に登録中...`,
+    );
+    const data = (await rest.put(
+        Routes.applicationGuildCommands(CLIENT_ID, guild_id),
+        {
+            body: commands,
+        },
+    )) as unknown[];
     console.log(`✅ ${data.length}個のギルドコマンドを登録しました！`);
     console.log("⚡ 即座に反映されます");
 };
@@ -62,7 +67,7 @@ try {
     if (deployGlobal) {
         await deployToGlobal();
     }
-    
+
     if (deployGuild) {
         if (!GUILD_ID) {
             console.error("❌ GUILD_ID が設定されていません");

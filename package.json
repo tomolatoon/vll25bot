@@ -7,7 +7,11 @@
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
     "deploy": "bun run src/deploy-commands.ts",
-    "clear": "bun run src/clear-commands.ts"
+    "clear": "bun run src/clear-commands.ts",
+    "lint": "biome lint ./src",
+    "lint-fix": "biome check --fix --unsafe ./src",
+    "format": "biome format --write ./src",
+    "test": "bun test"
   },
   "dependencies": {
     "discord.js": "^14.14.1",
@@ -15,6 +19,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/bun": "latest",
     "@types/node-cron": "^3.0.11",
     "@types/uuid": "^11.0.0"

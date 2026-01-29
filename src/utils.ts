@@ -109,7 +109,7 @@ export const or: OrFunc = (ps) => (input) => {
 
 /** cat演算子: 複数のパーサを連結 */
 type CatFunc = <T extends Parser<unknown>[]>(
-    ps: [...T]
+    ps: [...T],
 ) => Parser<{ [K in keyof T]: ParserData<T[K]> }>;
 export const cat: CatFunc = (ps) => (input) => {
     const rs: unknown[] = [];
@@ -208,7 +208,7 @@ export const digit: Parser<Digit> = is((c): c is Digit => /^\d$/.test(c));
 
 /** 整数値をパース */
 export const integer: Parser<number> = map(rep(digit, 1), (chars) =>
-    parseInt(chars.join(""))
+    Number.parseInt(chars.join("")),
 );
 
 /** 大文字アルファベット型 */
@@ -248,23 +248,23 @@ export type Alphabet = UpperAlpha | LowerAlpha;
 
 /** 大文字アルファベット1文字をパース */
 export const upperAlpha: Parser<UpperAlpha> = is((c): c is UpperAlpha =>
-    /^[A-Z]$/.test(c)
+    /^[A-Z]$/.test(c),
 );
 
 /** 小文字アルファベット1文字をパース */
 export const lowerAlpha: Parser<LowerAlpha> = is((c): c is LowerAlpha =>
-    /^[a-z]$/.test(c)
+    /^[a-z]$/.test(c),
 );
 
 /** アルファベット1文字をパース (大文字小文字問わず) */
 export const alpha: Parser<Alphabet> = is((c): c is Alphabet =>
-    /^[A-Za-z]$/.test(c)
+    /^[A-Za-z]$/.test(c),
 );
 
 /** 空白文字をパース */
 export const whitespace: Parser<null> = map(
     rep(or([...[" ", "\t", "\n", "\r"]].map(char))),
-    () => null
+    () => null,
 );
 
 // ============================================================================
@@ -297,13 +297,13 @@ const emptyComponents: DateTimeComponents = {
 
 /** DateTimeComponents を生成するヘルパー */
 const components = (
-    overrides: Partial<DateTimeComponents>
+    overrides: Partial<DateTimeComponents>,
 ): DateTimeComponents => ({ ...emptyComponents, ...overrides });
 
 /** 2つの DateTimeComponents をマージ (後者の非null値で上書き) */
 const mergeComponents = (
     a: DateTimeComponents,
-    b: DateTimeComponents
+    b: DateTimeComponents,
 ): DateTimeComponents => ({
     year: b.year ?? a.year,
     month: b.month ?? a.month,
@@ -321,7 +321,7 @@ const componentsToDate = (c: DateTimeComponents, now: Date): Date =>
         c.day ?? now.getDate(),
         c.hour ?? 0,
         c.minute ?? 0,
-        c.second ?? 0
+        c.second ?? 0,
     );
 
 /** Date から DateTimeComponents を生成 */
@@ -358,37 +358,37 @@ const sp: Parser<unknown> = rep(or([char(" "), char("　"), char("\t")]), 1);
 /** 時間: "HH:MM" */
 const time: Parser<DateTimeComponents> = map(
     cat([integer, char(":"), integer]),
-    ([h, , m]) => components({ hour: h, minute: m })
+    ([h, , m]) => components({ hour: h, minute: m }),
 );
 
 /** 年月日: "YYYY/MM/DD" or "YYYY-MM-DD" */
 const fullDate: Parser<DateTimeComponents> = map(
     cat([integer, dateSep, integer, dateSep, integer]),
-    ([y, , m, , d]) => components({ year: y, month: m, day: d })
+    ([y, , m, , d]) => components({ year: y, month: m, day: d }),
 );
 
 /** 月日: "M/D" or "M-D" */
 const shortDate: Parser<DateTimeComponents> = map(
     cat([integer, dateSep, integer]),
-    ([m, , d]) => components({ month: m, day: d })
+    ([m, , d]) => components({ month: m, day: d }),
 );
 
 /** 日本語月日: "M月D日" */
 const jpDate: Parser<DateTimeComponents> = map(
     cat([integer, str("月"), integer, str("日")]),
-    ([m, , d]) => components({ month: m, day: d })
+    ([m, , d]) => components({ month: m, day: d }),
 );
 
 /** 日本語年月日: "Y年M月D日" */
 const jpFullDate: Parser<DateTimeComponents> = map(
     cat([integer, str("年"), integer, str("月"), integer, str("日")]),
-    ([y, , m, , d]) => components({ year: y, month: m, day: d })
+    ([y, , m, , d]) => components({ year: y, month: m, day: d }),
 );
 
 /** 日のみ: "D日" */
 const dayOnly: Parser<DateTimeComponents> = map(
     cat([integer, str("日")]),
-    ([d]) => components({ day: d })
+    ([d]) => components({ day: d }),
 );
 
 /** 相対時間単位 */
@@ -424,13 +424,25 @@ const relativeDay = (now: Date): Parser<DateTimeComponents> =>
 
 /** 曜日名から曜日番号 (0=日, 1=月, ..., 6=土) へのマッピング */
 const weekdayMap: Record<string, number> = {
-    日: 0, 月: 1, 火: 2, 水: 3, 木: 4, 金: 5, 土: 6,
+    日: 0,
+    月: 1,
+    火: 2,
+    水: 3,
+    木: 4,
+    金: 5,
+    土: 6,
 };
 
 /** 曜日パーサ: "月曜日", "火曜", "水" など */
 const weekday = (now: Date): Parser<DateTimeComponents> => {
     const weekdayNames = or([
-        str("日"), str("月"), str("火"), str("水"), str("木"), str("金"), str("土"),
+        str("日"),
+        str("月"),
+        str("火"),
+        str("水"),
+        str("木"),
+        str("金"),
+        str("土"),
     ]);
     const suffix = opt(or([str("曜日"), str("曜")]));
 
@@ -449,7 +461,7 @@ const weekday = (now: Date): Parser<DateTimeComponents> => {
 
 /** 日付パーサと時間パーサを空白で結合 */
 const dateTime = (
-    dateParser: Parser<DateTimeComponents>
+    dateParser: Parser<DateTimeComponents>,
 ): Parser<DateTimeComponents> =>
     map(cat([dateParser, sp, time]), ([d, , t]) => mergeComponents(d, t));
 
@@ -504,7 +516,7 @@ export function parseFutureDateTime(input: string): Date | null {
         const result = parser(chars);
         if (result.result === "success") {
             const date = componentsToDate(result.data, now);
-            if (isNaN(date.getTime())) continue;
+            if (Number.isNaN(date.getTime())) continue;
             if (adjust && date <= now) adjust(date);
             return date;
         }

@@ -8,11 +8,11 @@
  */
 
 import type { Client } from "discord.js";
+import type { Command } from "../types";
 import { kanwa } from "./kanwa";
 import { omikuji } from "./omikuji";
 import { ping } from "./ping";
 import { remind } from "./remind";
-import type { Command } from "../types";
 
 // コマンド一覧（新しいコマンドはここに追加）
 const commands: Command[] = [kanwa, omikuji, ping, remind];

@@ -2,10 +2,10 @@
  * reminder.ts - リマインダー管理
  */
 
-import cron, { type ScheduledTask } from "node-cron";
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { v7 as uuidv7 } from "uuid";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import type { Client, TextChannel } from "discord.js";
+import cron, { type ScheduledTask } from "node-cron";
+import { v7 as uuidv7 } from "uuid";
 
 /** リマインダーデータ */
 export interface ReminderData {
@@ -39,7 +39,7 @@ class Reminder {
         message: string,
         remindAt: Date,
         createdBy: string,
-        guildId: string
+        guildId: string,
     ): ReminderData | null {
         if (remindAt <= new Date()) return null;
 
@@ -66,11 +66,13 @@ class Reminder {
         const task = cron.schedule(
             this.toCron(date),
             () => this.execute(data),
-            { timezone: "Asia/Tokyo" }
+            { timezone: "Asia/Tokyo" },
         );
 
         this.entries.set(data.id, { data, task });
-        console.log(`⏰ リマインダー登録: ${data.id} @ ${date.toLocaleString("ja-JP")}`);
+        console.log(
+            `⏰ リマインダー登録: ${data.id} @ ${date.toLocaleString("ja-JP")}`,
+        );
         return true;
     }
 
@@ -152,7 +154,7 @@ class Reminder {
 
         try {
             const channel = (await this.client.channels.fetch(
-                data.channelId
+                data.channelId,
             )) as TextChannel | null;
 
             if (channel) {

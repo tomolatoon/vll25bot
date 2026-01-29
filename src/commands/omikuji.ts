@@ -5,9 +5,9 @@
  */
 
 import {
-    SlashCommandBuilder,
-    EmbedBuilder,
     type ChatInputCommandInteraction,
+    EmbedBuilder,
+    SlashCommandBuilder,
 } from "discord.js";
 import type { Command, Fortune } from "../types";
 
@@ -29,7 +29,7 @@ const weights = [5, 15, 20, 25, 20, 14, 1] as const;
 function drawFortune(): Fortune {
     const rand = Math.random() * 100;
     let sum = 0;
-    for (let i of [...weights.keys()]) {
+    for (const i of [...weights.keys()]) {
         sum += weights[i];
         if (rand < sum) return fortunes[i];
     }

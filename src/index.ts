@@ -5,14 +5,22 @@
  */
 
 import {
-    Client,
-    GatewayIntentBits,
-    Collection,
     type ChatInputCommandInteraction,
+    Client,
+    Collection,
+    GatewayIntentBits,
 } from "discord.js";
 import { registerCommands } from "./commands";
-import { handleRemindCancelButton, BUTTON_ID_REMIND_CANCEL } from "./commands/remind";
-import { setClient, restoreReminders, saveReminders, stopReminders } from "./reminder";
+import {
+    BUTTON_ID_REMIND_CANCEL,
+    handleRemindCancelButton,
+} from "./commands/remind";
+import {
+    restoreReminders,
+    saveReminders,
+    setClient,
+    stopReminders,
+} from "./reminder";
 import type { Command } from "./types";
 
 // discord.js の Client 型を拡張

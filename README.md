@@ -116,6 +116,10 @@ bun dev
 | `bun run clear --global` | グローバルコマンドを削除 |
 | `bun run clear --guild` | ギルドコマンドを削除 |
 | `bun run clear --global --guild` | 両方のコマンドを削除 |
+| `bun run lint` | コードの静的解析 (Biome) |
+| `bun run lint-fix` | コードの静的解析 (Biome) |
+| `bun run format` | コードのフォーマット (Biome) |
+| `bun run test` | テストの実行 (Bun Test) |
 
 ## グローバルコマンド vs ギルドコマンド
 
@@ -153,15 +157,21 @@ vll25bot/
 │   ├── index.ts               # メインエントリーポイント
 │   ├── deploy-commands.ts     # コマンド登録スクリプト
 │   ├── reminder.ts            # リマインダー管理
-│   ├── utils.ts               # ユーティリティ関数
+│   ├── lib/
+│   │   └── parser/            # パーサコンビネータ & 日時解析
+│   │       ├── combinator.ts
+│   │       └── date-parser.ts
 │   ├── types.ts               # 型定義
 │   └── commands/
 │       ├── index.ts           # コマンド管理
 │       ├── omikuji.ts         # おみくじコマンド
 │       ├── ping.ts            # pingコマンド
 │       └── remind.ts          # リマインダーコマンド
+├── tests/                     # トスト
+│   └── date-parser.test.ts
 ├── .env.example               # 環境変数テンプレート
 ├── .gitignore
+├── biome.json                 # Biome設定
 ├── package.json
 ├── tsconfig.json
 └── README.md

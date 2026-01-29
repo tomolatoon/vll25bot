@@ -3,8 +3,8 @@
  */
 
 import {
-    SlashCommandBuilder,
     type ChatInputCommandInteraction,
+    SlashCommandBuilder,
 } from "discord.js";
 import type { Command } from "../types";
 
@@ -21,7 +21,7 @@ export const ping: Command = {
         const totalTime = sent.createdTimestamp - interaction.createdTimestamp; // 全体の応答時間
 
         await interaction.editReply(
-            `🏓 Pong!\n` + `📡 合計応答時間: ${totalTime}ms\n`
+            `🏓 Pong!\n📡 合計応答時間: ${totalTime}ms\n`,
         );
     },
 };
