@@ -45,24 +45,24 @@ export class Database {
     /**
      * クエリ実行 (SELECT)
      */
-    query<T = any>(sql: string, params: any[] = []): T[] {
+    query<T = unknown>(sql: string, params: (string | number | boolean | null)[] = []): T[] {
         return this.db.query(sql).all(...params) as T[];
     }
 
     /**
      * クエリ実行 (単一行取得)
      */
-    get<T = any>(sql: string, params: any[] = []): T | null {
+    get<T = unknown>(sql: string, params: (string | number | boolean | null)[] = []): T | null {
         return this.db.query(sql).get(...params) as T | null;
     }
 
     /**
      * コマンド実行 (INSERT, UPDATE, DELETE)
      */
-    run(sql: string, params: any[] = []) {
+    run(sql: string, params: (string | number | boolean | null)[] = []) {
         this.db.run(sql, params);
     }
-    
+
     /**
      * プリペアドステートメント用
      */

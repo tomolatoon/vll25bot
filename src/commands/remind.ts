@@ -148,13 +148,21 @@ async function handleAdd(
         return;
     }
 
+    if (!interaction.guildId) {
+        await interaction.reply({
+             content: "❌ このコマンドはサーバー内でのみ使用できます。",
+             flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
     // リマインダー作成
     const reminder = createReminder(
         targetChannel.id,
         message,
         remindAt,
         interaction.user.id,
-        interaction.guildId!,
+        interaction.guildId,
     );
 
     if (!reminder) {
@@ -186,7 +194,8 @@ async function handleAdd(
 async function handleList(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-    const guildId = interaction.guildId!;
+    if (!interaction.guildId) return;
+    const guildId = interaction.guildId;
     const targetChannel =
         (interaction.options.getChannel("channel") as TextChannel | null) ||
         (interaction.channel as TextChannel);
@@ -238,7 +247,8 @@ async function handleList(
 async function handleListAll(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-    const guildId = interaction.guildId!;
+    if (!interaction.guildId) return;
+    const guildId = interaction.guildId;
     const userId = interaction.user.id;
 
     const reminders = getRemindersByGuild(guildId).filter(
@@ -321,10 +331,11 @@ async function handleRemove(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     const id = interaction.options.getString("id", true);
+    if (!interaction.guildId) return;
     const result = cancelReminder(
         id,
         interaction.user.id,
-        interaction.guildId!,
+        interaction.guildId,
     );
 
     if (!result.success) {

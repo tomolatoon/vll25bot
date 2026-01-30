@@ -66,7 +66,7 @@ class Logger {
     /**
      * 共通ログ出力処理
      */
-    private print(level: LogLevel, message: string, ...args: any[]) {
+    private print(level: LogLevel, message: string, ...args: unknown[]) {
         const timestamp = this.getTimestamp();
         const formattedMessage = `[${timestamp}] [${level}] ${message}`;
 
@@ -108,23 +108,23 @@ class Logger {
         consoleMethod(`${colorCode}${formattedMessage}\x1b[0m`, ...args);
     }
 
-    public log(message: string, ...args: any[]) {
+    public log(message: string, ...args: unknown[]) {
         this.print("INFO", message, ...args);
     }
 
-    public info(message: string, ...args: any[]) {
+    public info(message: string, ...args: unknown[]) {
         this.print("INFO", message, ...args);
     }
 
-    public warn(message: string, ...args: any[]) {
+    public warn(message: string, ...args: unknown[]) {
         this.print("WARN", message, ...args);
     }
 
-    public error(message: string, ...args: any[]) {
+    public error(message: string, ...args: unknown[]) {
         this.print("ERROR", message, ...args);
     }
 
-    public debug(message: string, ...args: any[]) {
+    public debug(message: string, ...args: unknown[]) {
         this.print("DEBUG", message, ...args);
     }
 }

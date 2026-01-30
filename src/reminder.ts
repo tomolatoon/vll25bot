@@ -6,7 +6,7 @@ import { existsSync, readFileSync, renameSync } from "node:fs";
 import type { Client, TextChannel } from "discord.js";
 import { v7 as uuidv7 } from "uuid";
 import { REMINDER_FILE_PATH } from "./constants";
-import { db, type ReminderRow } from "./db/client";
+import { type ReminderRow, db } from "./db/client";
 import { logger } from "./utils/logger";
 
 /** リマインダーデータ (外部公開用) */
@@ -22,9 +22,9 @@ export interface ReminderData {
 
 class Reminder {
     private client: Client | null = null;
-    private checkInterval: Timer | null = null;
-    // メモリ内で待機中のタイマーを管理 (ID -> Timer)
-    private scheduledTasks = new Map<string, Timer>();
+    private checkInterval: ReturnType<typeof setInterval> | null = null;
+    // メモリ内で待機中のタイマーを管理 (ID -> Timeout)
+    private scheduledTasks = new Map<string, ReturnType<typeof setTimeout>>();
 
     constructor() {
         // 1分ごとにチェック (プリフェッチ)
@@ -39,12 +39,12 @@ class Reminder {
     /** ポーリング開始 */
     private startScheduler() {
         if (this.checkInterval) clearInterval(this.checkInterval);
-        
+
         // ほぼ1分おきにチェック
         this.checkInterval = setInterval(() => {
             this.checkReminders();
         }, 60 * 1000);
-        
+
         // 起動時に直近のものをチェック
         setTimeout(() => this.checkReminders(), 1000);
     }
@@ -67,7 +67,15 @@ class Reminder {
             db.run(
                 `INSERT INTO reminders (id, channelId, message, remindAt, createdAt, createdBy, guildId)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [id, channelId, message, remindAtTimestamp, createdAt, createdBy, guildId]
+                [
+                    id,
+                    channelId,
+                    message,
+                    remindAtTimestamp,
+                    createdAt,
+                    createdBy,
+                    guildId,
+                ],
             );
 
             const data: ReminderData = {
@@ -106,7 +114,10 @@ class Reminder {
                 this.scheduledTasks.delete(id);
             }
 
-            const exists = db.get<{ id: string }>("SELECT id FROM reminders WHERE id = ?", [id]);
+            const exists = db.get<{ id: string }>(
+                "SELECT id FROM reminders WHERE id = ?",
+                [id],
+            );
             if (!exists) return false;
 
             db.run("DELETE FROM reminders WHERE id = ?", [id]);
@@ -127,7 +138,7 @@ class Reminder {
         try {
             const tasks = db.query<ReminderRow>(
                 "SELECT * FROM reminders WHERE remindAt <= ? ORDER BY remindAt ASC",
-                [threshold]
+                [threshold],
             );
 
             if (tasks.length === 0) return;
@@ -141,9 +152,11 @@ class Reminder {
                 this.scheduleTask(row.id, row.remindAt, data);
                 scheduledCount++;
             }
-            
+
             if (scheduledCount > 0) {
-                logger.info(`🔄 ${scheduledCount}件のリマインダーをメモリに予約しました`);
+                logger.info(
+                    `🔄 ${scheduledCount}件のリマインダーをメモリに予約しました`,
+                );
             }
         } catch (error) {
             logger.error("❌ リマインダーチェック中にエラー発生:", error);
@@ -210,21 +223,27 @@ class Reminder {
 
     /** 全リマインダー一覧を取得 (互換性のためDateObjectではなくRequestData形式で返す) */
     getAll(): ReminderData[] {
-        return db.query<ReminderRow>("SELECT * FROM reminders ORDER BY remindAt ASC")
+        return db
+            .query<ReminderRow>("SELECT * FROM reminders ORDER BY remindAt ASC")
             .map(this.rowToData);
     }
 
     /** ギルドのリマインダー一覧を取得 */
     getByGuild(guildId: string): ReminderData[] {
-        return db.query<ReminderRow>(
-            "SELECT * FROM reminders WHERE guildId = ? ORDER BY remindAt ASC", 
-            [guildId]
-        ).map(this.rowToData);
+        return db
+            .query<ReminderRow>(
+                "SELECT * FROM reminders WHERE guildId = ? ORDER BY remindAt ASC",
+                [guildId],
+            )
+            .map(this.rowToData);
     }
 
     /** IDでリマインダーを検索 */
     findById(id: string): ReminderData | undefined {
-        const row = db.get<ReminderRow>("SELECT * FROM reminders WHERE id = ?", [id]);
+        const row = db.get<ReminderRow>(
+            "SELECT * FROM reminders WHERE id = ?",
+            [id],
+        );
         return row ? this.rowToData(row) : undefined;
     }
 
@@ -234,16 +253,18 @@ class Reminder {
             return 0;
         }
 
-        logger.info("📂 旧データファイル(reminders.json)を検出。データベース移行を開始します...");
+        logger.info(
+            "📂 旧データファイル(reminders.json)を検出。データベース移行を開始します...",
+        );
 
         try {
             const content = readFileSync(REMINDER_FILE_PATH, "utf-8");
-            const oldData: ReminderData[] = JSON.parse(content);
+            const oldData = JSON.parse(content) as ReminderData[];
             let count = 0;
 
             const stmt = db.prepare(
                 `INSERT OR IGNORE INTO reminders (id, channelId, message, remindAt, createdAt, createdBy, guildId)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
             );
 
             const now = Date.now();
@@ -255,7 +276,9 @@ class Reminder {
                 // 大量に来ると困るので、明らかな過去(1分以上前)はスキップ、直近は取り込むなどの判断が必要。
                 // 以前のロジックを踏襲し、完全に過去のものはスキップする)
                 if (remindAtDate.getTime() <= now) {
-                    logger.info(`⏭️ 過去のリマインダーのため移行スキップ: ${item.id}`);
+                    logger.info(
+                        `⏭️ 過去のリマインダーのため移行スキップ: ${item.id}`,
+                    );
                     continue;
                 }
 
@@ -266,26 +289,28 @@ class Reminder {
                     remindAtDate.getTime(),
                     now, // createdAtは不明なので現在時刻
                     item.createdBy,
-                    item.guildId
+                    item.guildId,
                 );
                 count++;
             }
             db.run("COMMIT");
 
-            logger.info(`✅ ${count}/${oldData.length}件のデータを移行しました。`);
+            logger.info(
+                `✅ ${count}/${oldData.length}件のデータを移行しました。`,
+            );
 
             // 移行完了後リネーム
-            const migratedPath = REMINDER_FILE_PATH + ".migrated";
+            const migratedPath = `${REMINDER_FILE_PATH}.migrated`;
             renameSync(REMINDER_FILE_PATH, migratedPath);
             logger.info(`📂 旧ファイルをリネームしました: ${migratedPath}`);
-            
+
             // 移行したデータを即座にスケジュールチェック
             setTimeout(() => this.checkReminders(), 100);
 
             return count;
         } catch (error) {
             logger.error("❌ データ移行中にエラーが発生しました:", error);
-            if (db.query("SELECT 1").get(null)) db.run("ROLLBACK");
+            if (db.get("SELECT 1")) db.run("ROLLBACK");
             return 0;
         }
     }
@@ -304,23 +329,27 @@ class Reminder {
     /** ギルドの全タスクを停止 */
     stopAllByGuild(guildId: string): number {
         const targets = this.getByGuild(guildId);
-        
+
         // メモリ上のタイマー解除
         for (const target of targets) {
-             if (this.scheduledTasks.has(target.id)) {
+            if (this.scheduledTasks.has(target.id)) {
                 clearTimeout(this.scheduledTasks.get(target.id));
                 this.scheduledTasks.delete(target.id);
             }
         }
 
-        const count = db.get<{ctx: number}>("SELECT COUNT(*) as ctx FROM reminders WHERE guildId = ?", [guildId])?.ctx || 0;
+        const count =
+            db.get<{ ctx: number }>(
+                "SELECT COUNT(*) as ctx FROM reminders WHERE guildId = ?",
+                [guildId],
+            )?.ctx || 0;
         if (count > 0) {
             db.run("DELETE FROM reminders WHERE guildId = ?", [guildId]);
             logger.info(`🛑 ギルドの${count}件のリマインダーを削除しました`);
         }
         return count;
     }
-    
+
     // 互換性用
     save(): void {
         // No-op
