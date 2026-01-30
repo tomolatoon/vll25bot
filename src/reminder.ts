@@ -1,36 +1,49 @@
 /**
- * reminder.ts - リマインダー管理
+ * reminder.ts - リマインダー管理 (SQLite版)
  */
 
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, renameSync } from "node:fs";
 import type { Client, TextChannel } from "discord.js";
-import cron, { type ScheduledTask } from "node-cron";
 import { v7 as uuidv7 } from "uuid";
-import { REMINDER_BACKUP_FILE_PATH, REMINDER_FILE_PATH } from "./constants";
+import { REMINDER_FILE_PATH } from "./constants";
+import { db, type ReminderRow } from "./db/client";
 import { logger } from "./utils/logger";
 
-/** リマインダーデータ */
+/** リマインダーデータ (外部公開用) */
 export interface ReminderData {
     id: string;
     channelId: string;
     message: string;
-    remindAt: string;
+    remindAt: string; // ISO 8601 string
     createdBy: string;
     guildId: string;
-}
-
-/** リマインダーとタスクをまとめて管理 */
-interface ReminderEntry {
-    data: ReminderData;
-    task: ScheduledTask;
+    createdAt?: string; // Optional for backward compatibility
 }
 
 class Reminder {
-    private entries = new Map<string, ReminderEntry>();
     private client: Client | null = null;
+    private checkInterval: Timer | null = null;
+
+    constructor() {
+        // 1分ごとにチェック
+        this.startScheduler();
+    }
 
     setClient(client: Client): void {
         this.client = client;
+    }
+
+    /** ポーリング開始 */
+    private startScheduler() {
+        if (this.checkInterval) clearInterval(this.checkInterval);
+        
+        // 毎分00秒に合わせるとなお良いが、簡易的に1分間隔で実行
+        this.checkInterval = setInterval(() => {
+            this.checkReminders();
+        }, 60 * 1000);
+        
+        // 起動時に一度チェック（遅延実行を防ぐため）
+        setTimeout(() => this.checkReminders(), 5000);
     }
 
     /** リマインダーを作成して登録 */
@@ -43,122 +56,80 @@ class Reminder {
     ): ReminderData | null {
         if (remindAt <= new Date()) return null;
 
-        const data: ReminderData = {
-            id: uuidv7(),
-            channelId,
-            message,
-            remindAt: remindAt.toISOString(),
-            createdBy,
-            guildId,
-        };
+        const id = uuidv7();
+        const createdAt = Date.now();
+        const remindAtTimestamp = remindAt.getTime();
 
-        return this.register(data) ? (this.save(), data) : null;
+        try {
+            db.run(
+                `INSERT INTO reminders (id, channelId, message, remindAt, createdAt, createdBy, guildId)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [id, channelId, message, remindAtTimestamp, createdAt, createdBy, guildId]
+            );
+
+            const data: ReminderData = {
+                id,
+                channelId,
+                message,
+                remindAt: remindAt.toISOString(),
+                createdBy,
+                guildId,
+            };
+
+            logger.info(
+                `⏰ リマインダー登録: ${id} @ ${remindAt.toLocaleString("ja-JP")}`,
+            );
+            return data;
+        } catch (error) {
+            logger.error("❌ リマインダー登録失敗:", error);
+            return null;
+        }
     }
 
-    /** リマインダーを登録 */
-    register(data: ReminderData): boolean {
-        const date = new Date(data.remindAt);
-        if (date <= new Date()) {
-            logger.info(`⏭️ 過去のリマインダーをスキップ: ${data.id}`);
+    /** リマインダーを削除 */
+    stop(id: string): boolean {
+        try {
+            const exists = db.get<{ id: string }>("SELECT id FROM reminders WHERE id = ?", [id]);
+            if (!exists) return false;
+
+            db.run("DELETE FROM reminders WHERE id = ?", [id]);
+            logger.info(`🗑️ リマインダー削除: ${id}`);
+            return true;
+        } catch (error) {
+            logger.error("❌ リマインダー削除失敗:", error);
             return false;
         }
-
-        const task = cron.schedule(
-            this.toCron(date),
-            () => this.execute(data),
-            { timezone: "Asia/Tokyo" },
-        );
-
-        this.entries.set(data.id, { data, task });
-        logger.info(
-            `⏰ リマインダー登録: ${data.id} @ ${date.toLocaleString("ja-JP")}`,
-        );
-        return true;
     }
 
-    /** リマインダーを停止・削除 */
-    stop(id: string): boolean {
-        const entry = this.entries.get(id);
-        if (!entry) return false;
+    /** 期限切れリマインダーのチェックと実行 */
+    private async checkReminders() {
+        if (!this.client) return;
 
-        entry.task.stop();
-        this.entries.delete(id);
-        this.save();
-        return true;
-    }
+        // 現在時刻 + 1分 以下の未実行リマインダーを取得
+        // (例: 12:00:00実行時、12:01:00までのものを取得 -> 12:00:30のものも含まれる)
+        const now = Date.now();
+        const threshold = now + 60 * 1000;
 
-    /** 全リマインダー一覧を取得 */
-    getAll(): ReminderData[] {
-        return [...this.entries.values()].map((e) => e.data);
-    }
+        try {
+            const tasks = db.query<ReminderRow>(
+                "SELECT * FROM reminders WHERE remindAt <= ? ORDER BY remindAt ASC",
+                [threshold]
+            );
 
-    /** ギルドのリマインダー一覧を取得 */
-    getByGuild(guildId: string): ReminderData[] {
-        return [...this.entries.values()]
-            .map((e) => e.data)
-            .filter((d) => d.guildId === guildId);
-    }
+            if (tasks.length === 0) return;
 
-    /** IDでリマインダーを検索 */
-    findById(id: string): ReminderData | undefined {
-        return this.entries.get(id)?.data;
-    }
+            logger.info(`🔄 ${tasks.length}件のリマインダーを実行します`);
 
-    /** ファイルから復元 */
-    restore(): number {
-        // バックアップを作成
-        if (existsSync(REMINDER_FILE_PATH)) {
-            try {
-                copyFileSync(REMINDER_FILE_PATH, REMINDER_BACKUP_FILE_PATH);
-                logger.info(
-                    "💾 リマインダーファイルのバックアップを作成しました。",
-                );
-            } catch (error) {
-                logger.error("❌ バックアップ作成エラー:", error);
+            for (const task of tasks) {
+                await this.execute(task);
             }
+        } catch (error) {
+            logger.error("❌ リマインダーチェック中にエラー発生:", error);
         }
-
-        const saved = this.load();
-        let count = 0;
-        for (const data of saved) {
-            if (this.register(data)) count++;
-        }
-        this.save();
-        logger.info(`📂 ${count}/${saved.length}件のリマインダーを復元`);
-        return count;
-    }
-
-    /** ファイルに保存 */
-    save(): void {
-        const data = [...this.entries.values()].map((e) => e.data);
-        writeFileSync(REMINDER_FILE_PATH, JSON.stringify(data, null, 2));
-        logger.info(`💾 ${data.length}件のリマインダーを保存`);
-    }
-
-    /** 全タスクを停止 */
-    stopAll(): void {
-        for (const { task } of this.entries.values()) task.stop();
-        this.entries.clear();
-        logger.info("🛑 全リマインダータスクを停止");
-    }
-
-    /** ギルドの全タスクを停止 */
-    stopAllByGuild(guildId: string): number {
-        const targets = this.getByGuild(guildId);
-        for (const data of targets) {
-            const entry = this.entries.get(data.id);
-            if (entry) {
-                entry.task.stop();
-                this.entries.delete(data.id);
-            }
-        }
-        if (targets.length > 0) this.save();
-        logger.info(`🛑 ギルドの${targets.length}件のリマインダーを停止`);
-        return targets.length;
     }
 
     /** メッセージを送信 */
-    private async execute(data: ReminderData): Promise<void> {
+    private async execute(row: ReminderRow): Promise<void> {
         if (!this.client) {
             logger.error("❌ Discord クライアントが未設定");
             return;
@@ -166,36 +137,132 @@ class Reminder {
 
         try {
             const channel = (await this.client.channels.fetch(
-                data.channelId,
+                row.channelId,
             )) as TextChannel | null;
 
             if (channel) {
-                await channel.send(data.message);
-                logger.info(`📤 送信完了: ${data.id} -> #${channel.name}`);
+                await channel.send(row.message);
+                logger.info(`📤 送信完了: ${row.id} -> #${channel.name}`);
             } else {
-                logger.error(`❌ チャンネル未発見: ${data.channelId}`);
+                logger.error(`❌ チャンネル未発見: ${row.channelId}`);
             }
         } catch (error) {
-            logger.error(`❌ 送信エラー (${data.id}):`, error);
+            logger.error(`❌ 送信エラー (${row.id}):`, error);
+        } finally {
+            // 送信成功/失敗に関わらず削除（再送防止）
+            this.stop(row.id);
         }
-
-        this.stop(data.id);
     }
 
-    /** ファイルから読み込み */
-    private load(): ReminderData[] {
-        if (!existsSync(REMINDER_FILE_PATH)) return [];
+    /** 全リマインダー一覧を取得 (互換性のためDateObjectではなくRequestData形式で返す) */
+    getAll(): ReminderData[] {
+        return db.query<ReminderRow>("SELECT * FROM reminders ORDER BY remindAt ASC")
+            .map(this.rowToData);
+    }
+
+    /** ギルドのリマインダー一覧を取得 */
+    getByGuild(guildId: string): ReminderData[] {
+        return db.query<ReminderRow>(
+            "SELECT * FROM reminders WHERE guildId = ? ORDER BY remindAt ASC", 
+            [guildId]
+        ).map(this.rowToData);
+    }
+
+    /** IDでリマインダーを検索 */
+    findById(id: string): ReminderData | undefined {
+        const row = db.get<ReminderRow>("SELECT * FROM reminders WHERE id = ?", [id]);
+        return row ? this.rowToData(row) : undefined;
+    }
+
+    /** JSONファイルからの移行 */
+    restore(): number {
+        if (!existsSync(REMINDER_FILE_PATH)) {
+            return 0;
+        }
+
+        logger.info("📂 旧データファイル(reminders.json)を検出。データベース移行を開始します...");
+
         try {
-            return JSON.parse(readFileSync(REMINDER_FILE_PATH, "utf-8"));
+            const content = readFileSync(REMINDER_FILE_PATH, "utf-8");
+            const oldData: ReminderData[] = JSON.parse(content);
+            let count = 0;
+
+            const stmt = db.prepare(
+                `INSERT OR IGNORE INTO reminders (id, channelId, message, remindAt, createdAt, createdBy, guildId)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`
+            );
+
+            const now = Date.now();
+
+            db.run("BEGIN TRANSACTION");
+            for (const item of oldData) {
+                // 過去のものはスキップ（あるいは移行して即時実行されるかも? 今回はスキップロジックを入れる）
+                const remindAtDate = new Date(item.remindAt);
+                if (remindAtDate.getTime() <= now) {
+                    logger.info(`⏭️ 過去のリマインダーのため移行スキップ: ${item.id}`);
+                    continue;
+                }
+
+                stmt.run(
+                    item.id,
+                    item.channelId,
+                    item.message,
+                    remindAtDate.getTime(),
+                    now, // createdAtは不明なので現在時刻
+                    item.createdBy,
+                    item.guildId
+                );
+                count++;
+            }
+            db.run("COMMIT");
+
+            logger.info(`✅ ${count}/${oldData.length}件のデータを移行しました。`);
+
+            // 移行完了後リネーム
+            const migratedPath = REMINDER_FILE_PATH + ".migrated";
+            renameSync(REMINDER_FILE_PATH, migratedPath);
+            logger.info(`📂 旧ファイルをリネームしました: ${migratedPath}`);
+
+            return count;
         } catch (error) {
-            logger.error("❌ リマインダーファイル読み込みエラー:", error);
-            return [];
+            logger.error("❌ データ移行中にエラーが発生しました:", error);
+            if (db.query("SELECT 1").get(null)) db.run("ROLLBACK");
+            return 0;
         }
     }
 
-    /** Date を cron 形式に変換 */
-    private toCron(date: Date): string {
-        return `${date.getMinutes()} ${date.getHours()} ${date.getDate()} ${date.getMonth() + 1} *`;
+    /** 全タスクを停止（DB全削除）- 慎重に */
+    stopAll(): void {
+        db.run("DELETE FROM reminders");
+        logger.info("🛑 全リマインダーを削除しました");
+    }
+
+    /** ギルドの全タスクを停止 */
+    stopAllByGuild(guildId: string): number {
+        const count = db.get<{ctx: number}>("SELECT COUNT(*) as ctx FROM reminders WHERE guildId = ?", [guildId])?.ctx || 0;
+        if (count > 0) {
+            db.run("DELETE FROM reminders WHERE guildId = ?", [guildId]);
+            logger.info(`🛑 ギルドの${count}件のリマインダーを削除しました`);
+        }
+        return count;
+    }
+    
+    // 互換性用: 保存はDB即時反映なので何もしない
+    save(): void {
+        // No-op
+    }
+
+    /** DB行データをReminderDataに変換 */
+    private rowToData(row: ReminderRow): ReminderData {
+        return {
+            id: row.id,
+            channelId: row.channelId,
+            message: row.message,
+            remindAt: new Date(row.remindAt).toISOString(),
+            createdBy: row.createdBy,
+            guildId: row.guildId,
+            createdAt: new Date(row.createdAt).toISOString(),
+        };
     }
 }
 

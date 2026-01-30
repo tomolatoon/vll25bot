@@ -17,3 +17,7 @@ export const REMINDER_BACKUP_FILE_PATH = path.join(
     DATA_DIR,
     REMINDER_BACKUP_FILE_NAME,
 );
+
+// データベースファイル名
+export const DB_FILE_NAME = "reminders.db";
+export const DB_FILE_PATH = path.join(DATA_DIR, DB_FILE_NAME);

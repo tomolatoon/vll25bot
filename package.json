@@ -15,13 +15,11 @@
   },
   "dependencies": {
     "discord.js": "^14.14.1",
-    "node-cron": "^4.2.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/bun": "latest",
-    "@types/node-cron": "^3.0.11",
     "@types/uuid": "^11.0.0"
   }
 }
