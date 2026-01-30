@@ -23,27 +23,30 @@ export interface ReminderData {
 class Reminder {
     private client: Client | null = null;
     private checkInterval: Timer | null = null;
+    // メモリ内で待機中のタイマーを管理 (ID -> Timer)
+    private scheduledTasks = new Map<string, Timer>();
 
     constructor() {
-        // 1分ごとにチェック
+        // 1分ごとにチェック (プリフェッチ)
         this.startScheduler();
     }
 
     setClient(client: Client): void {
         this.client = client;
+        // クライアント設定時に既存のスケジュール済みタスクがあれば実行可能状態にする(現状はexecuteでチェックしているので不要だが明示的にリロードしても良い)
     }
 
     /** ポーリング開始 */
     private startScheduler() {
         if (this.checkInterval) clearInterval(this.checkInterval);
         
-        // 毎分00秒に合わせるとなお良いが、簡易的に1分間隔で実行
+        // ほぼ1分おきにチェック
         this.checkInterval = setInterval(() => {
             this.checkReminders();
         }, 60 * 1000);
         
-        // 起動時に一度チェック（遅延実行を防ぐため）
-        setTimeout(() => this.checkReminders(), 5000);
+        // 起動時に直近のものをチェック
+        setTimeout(() => this.checkReminders(), 1000);
     }
 
     /** リマインダーを作成して登録 */
@@ -79,6 +82,14 @@ class Reminder {
             logger.info(
                 `⏰ リマインダー登録: ${id} @ ${remindAt.toLocaleString("ja-JP")}`,
             );
+
+            // 直近（次のポーリングまで）なら即時スケジュール
+            // バッファを持たせて少し長めの期間でもメモリに載せておく (例: 70秒以内)
+            const now = Date.now();
+            if (remindAtTimestamp <= now + 70 * 1000) {
+                this.scheduleTask(id, remindAtTimestamp, data);
+            }
+
             return data;
         } catch (error) {
             logger.error("❌ リマインダー登録失敗:", error);
@@ -89,6 +100,12 @@ class Reminder {
     /** リマインダーを削除 */
     stop(id: string): boolean {
         try {
+            // メモリ上のタイマーを解除
+            if (this.scheduledTasks.has(id)) {
+                clearTimeout(this.scheduledTasks.get(id));
+                this.scheduledTasks.delete(id);
+            }
+
             const exists = db.get<{ id: string }>("SELECT id FROM reminders WHERE id = ?", [id]);
             if (!exists) return false;
 
@@ -101,14 +118,11 @@ class Reminder {
         }
     }
 
-    /** 期限切れリマインダーのチェックと実行 */
+    /** 期限切れ & 直近のリマインダーをチェックして予約 */
     private async checkReminders() {
-        if (!this.client) return;
-
-        // 現在時刻 + 1分 以下の未実行リマインダーを取得
-        // (例: 12:00:00実行時、12:01:00までのものを取得 -> 12:00:30のものも含まれる)
+        // 現在時刻 + 1分 + バッファ(10秒) までのリマインダーを取得
         const now = Date.now();
-        const threshold = now + 60 * 1000;
+        const threshold = now + 70 * 1000;
 
         try {
             const tasks = db.query<ReminderRow>(
@@ -118,39 +132,79 @@ class Reminder {
 
             if (tasks.length === 0) return;
 
-            logger.info(`🔄 ${tasks.length}件のリマインダーを実行します`);
+            let scheduledCount = 0;
+            for (const row of tasks) {
+                // すでにスケジュール済みならスキップ (重複防止)
+                if (this.scheduledTasks.has(row.id)) continue;
 
-            for (const task of tasks) {
-                await this.execute(task);
+                const data = this.rowToData(row);
+                this.scheduleTask(row.id, row.remindAt, data);
+                scheduledCount++;
+            }
+            
+            if (scheduledCount > 0) {
+                logger.info(`🔄 ${scheduledCount}件のリマインダーをメモリに予約しました`);
             }
         } catch (error) {
             logger.error("❌ リマインダーチェック中にエラー発生:", error);
         }
     }
 
+    /** 指定時刻に実行するようにタイマーをセット */
+    private scheduleTask(id: string, remindAt: number, data: ReminderData) {
+        // 既存があれば消す（念のため）
+        if (this.scheduledTasks.has(id)) {
+            clearTimeout(this.scheduledTasks.get(id));
+        }
+
+        const now = Date.now();
+        const delay = Math.max(0, remindAt - now);
+
+        const timer = setTimeout(() => {
+            this.scheduledTasks.delete(id);
+            this.execute(data);
+        }, delay);
+
+        this.scheduledTasks.set(id, timer);
+    }
+
     /** メッセージを送信 */
-    private async execute(row: ReminderRow): Promise<void> {
+    private async execute(data: ReminderData): Promise<void> {
         if (!this.client) {
             logger.error("❌ Discord クライアントが未設定");
+            // クライアントがない場合でも、DBからは削除しないと永遠に残る可能性があるが、
+            // 重要データなので再試行の余地を残すため削除しない選択肢もある。
+            // 今回は「送信失敗」としてログに書き、DBからは消さない（次のポーリングでまた拾われる -> また失敗ログが出る）
+            // というループになるが、クライアント未設定は異常事態なのでそれで気づけるようにする。
             return;
         }
 
         try {
             const channel = (await this.client.channels.fetch(
-                row.channelId,
+                data.channelId,
             )) as TextChannel | null;
 
             if (channel) {
-                await channel.send(row.message);
-                logger.info(`📤 送信完了: ${row.id} -> #${channel.name}`);
+                await channel.send(data.message);
+                logger.info(`📤 送信完了: ${data.id} -> #${channel.name}`);
             } else {
-                logger.error(`❌ チャンネル未発見: ${row.channelId}`);
+                logger.error(`❌ チャンネル未発見: ${data.channelId}`);
             }
         } catch (error) {
-            logger.error(`❌ 送信エラー (${row.id}):`, error);
-        } finally {
-            // 送信成功/失敗に関わらず削除（再送防止）
-            this.stop(row.id);
+            logger.error(`❌ 送信エラー (${data.id}):`, error);
+        }
+
+        // 送信成功/失敗に関わらず(チャネル不明等は回復不能なので) 削除
+        // クライアント未設定エラー以外のエラー（権限など）はここで削除される
+        this.removeDbRecord(data.id);
+    }
+
+    /** DBからレコード削除（内部用） */
+    private removeDbRecord(id: string) {
+        try {
+            db.run("DELETE FROM reminders WHERE id = ?", [id]);
+        } catch (e) {
+            logger.error(`❌ DB削除失敗 (${id}):`, e);
         }
     }
 
@@ -196,8 +250,10 @@ class Reminder {
 
             db.run("BEGIN TRANSACTION");
             for (const item of oldData) {
-                // 過去のものはスキップ（あるいは移行して即時実行されるかも? 今回はスキップロジックを入れる）
                 const remindAtDate = new Date(item.remindAt);
+                // 過去のものはスキップしない（ロジック変更：過去のものも取り込んで即時実行させる方が自然かもだが、
+                // 大量に来ると困るので、明らかな過去(1分以上前)はスキップ、直近は取り込むなどの判断が必要。
+                // 以前のロジックを踏襲し、完全に過去のものはスキップする)
                 if (remindAtDate.getTime() <= now) {
                     logger.info(`⏭️ 過去のリマインダーのため移行スキップ: ${item.id}`);
                     continue;
@@ -222,6 +278,9 @@ class Reminder {
             const migratedPath = REMINDER_FILE_PATH + ".migrated";
             renameSync(REMINDER_FILE_PATH, migratedPath);
             logger.info(`📂 旧ファイルをリネームしました: ${migratedPath}`);
+            
+            // 移行したデータを即座にスケジュールチェック
+            setTimeout(() => this.checkReminders(), 100);
 
             return count;
         } catch (error) {
@@ -234,11 +293,26 @@ class Reminder {
     /** 全タスクを停止（DB全削除）- 慎重に */
     stopAll(): void {
         db.run("DELETE FROM reminders");
+        // メモリもクリア
+        for (const timer of this.scheduledTasks.values()) {
+            clearTimeout(timer);
+        }
+        this.scheduledTasks.clear();
         logger.info("🛑 全リマインダーを削除しました");
     }
 
     /** ギルドの全タスクを停止 */
     stopAllByGuild(guildId: string): number {
+        const targets = this.getByGuild(guildId);
+        
+        // メモリ上のタイマー解除
+        for (const target of targets) {
+             if (this.scheduledTasks.has(target.id)) {
+                clearTimeout(this.scheduledTasks.get(target.id));
+                this.scheduledTasks.delete(target.id);
+            }
+        }
+
         const count = db.get<{ctx: number}>("SELECT COUNT(*) as ctx FROM reminders WHERE guildId = ?", [guildId])?.ctx || 0;
         if (count > 0) {
             db.run("DELETE FROM reminders WHERE guildId = ?", [guildId]);
@@ -247,7 +321,7 @@ class Reminder {
         return count;
     }
     
-    // 互換性用: 保存はDB即時反映なので何もしない
+    // 互換性用
     save(): void {
         // No-op
     }
