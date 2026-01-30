@@ -6,6 +6,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import type { Client, TextChannel } from "discord.js";
 import cron, { type ScheduledTask } from "node-cron";
 import { v7 as uuidv7 } from "uuid";
+import { logger } from "./utils/logger";
 
 /** リマインダーデータ */
 export interface ReminderData {
@@ -59,7 +60,7 @@ class Reminder {
     register(data: ReminderData): boolean {
         const date = new Date(data.remindAt);
         if (date <= new Date()) {
-            console.log(`⏭️ 過去のリマインダーをスキップ: ${data.id}`);
+            logger.info(`⏭️ 過去のリマインダーをスキップ: ${data.id}`);
             return false;
         }
 
@@ -70,7 +71,7 @@ class Reminder {
         );
 
         this.entries.set(data.id, { data, task });
-        console.log(
+        logger.info(
             `⏰ リマインダー登録: ${data.id} @ ${date.toLocaleString("ja-JP")}`,
         );
         return true;
@@ -112,7 +113,7 @@ class Reminder {
             if (this.register(data)) count++;
         }
         this.save();
-        console.log(`📂 ${count}/${saved.length}件のリマインダーを復元`);
+        logger.info(`📂 ${count}/${saved.length}件のリマインダーを復元`);
         return count;
     }
 
@@ -120,14 +121,14 @@ class Reminder {
     save(): void {
         const data = [...this.entries.values()].map((e) => e.data);
         writeFileSync(REMINDER_FILE, JSON.stringify(data, null, 2));
-        console.log(`💾 ${data.length}件のリマインダーを保存`);
+        logger.info(`💾 ${data.length}件のリマインダーを保存`);
     }
 
     /** 全タスクを停止 */
     stopAll(): void {
         for (const { task } of this.entries.values()) task.stop();
         this.entries.clear();
-        console.log("🛑 全リマインダータスクを停止");
+        logger.info("🛑 全リマインダータスクを停止");
     }
 
     /** ギルドの全タスクを停止 */
@@ -141,14 +142,14 @@ class Reminder {
             }
         }
         if (targets.length > 0) this.save();
-        console.log(`🛑 ギルドの${targets.length}件のリマインダーを停止`);
+        logger.info(`🛑 ギルドの${targets.length}件のリマインダーを停止`);
         return targets.length;
     }
 
     /** メッセージを送信 */
     private async execute(data: ReminderData): Promise<void> {
         if (!this.client) {
-            console.error("❌ Discord クライアントが未設定");
+            logger.error("❌ Discord クライアントが未設定");
             return;
         }
 
@@ -157,14 +158,14 @@ class Reminder {
                 data.channelId,
             )) as TextChannel | null;
 
-            if (channel) {
+        if (channel) {
                 await channel.send(data.message);
-                console.log(`📤 送信完了: ${data.id} -> #${channel.name}`);
+                logger.info(`📤 送信完了: ${data.id} -> #${channel.name}`);
             } else {
-                console.error(`❌ チャンネル未発見: ${data.channelId}`);
+                logger.error(`❌ チャンネル未発見: ${data.channelId}`);
             }
         } catch (error) {
-            console.error(`❌ 送信エラー (${data.id}):`, error);
+            logger.error(`❌ 送信エラー (${data.id}):`, error);
         }
 
         this.stop(data.id);
@@ -176,7 +177,7 @@ class Reminder {
         try {
             return JSON.parse(readFileSync(REMINDER_FILE, "utf-8"));
         } catch (error) {
-            console.error("❌ リマインダーファイル読み込みエラー:", error);
+            logger.error("❌ リマインダーファイル読み込みエラー:", error);
             return [];
         }
     }
