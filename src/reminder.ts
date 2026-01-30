@@ -2,10 +2,11 @@
  * reminder.ts - リマインダー管理
  */
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import type { Client, TextChannel } from "discord.js";
 import cron, { type ScheduledTask } from "node-cron";
 import { v7 as uuidv7 } from "uuid";
+import { REMINDER_BACKUP_FILE_PATH, REMINDER_FILE_PATH } from "./constants";
 import { logger } from "./utils/logger";
 
 /** リマインダーデータ */
@@ -23,8 +24,6 @@ interface ReminderEntry {
     data: ReminderData;
     task: ScheduledTask;
 }
-
-const REMINDER_FILE = "./reminders.json";
 
 class Reminder {
     private entries = new Map<string, ReminderEntry>();
@@ -107,6 +106,18 @@ class Reminder {
 
     /** ファイルから復元 */
     restore(): number {
+        // バックアップを作成
+        if (existsSync(REMINDER_FILE_PATH)) {
+            try {
+                copyFileSync(REMINDER_FILE_PATH, REMINDER_BACKUP_FILE_PATH);
+                logger.info(
+                    "💾 リマインダーファイルのバックアップを作成しました。",
+                );
+            } catch (error) {
+                logger.error("❌ バックアップ作成エラー:", error);
+            }
+        }
+
         const saved = this.load();
         let count = 0;
         for (const data of saved) {
@@ -120,7 +131,7 @@ class Reminder {
     /** ファイルに保存 */
     save(): void {
         const data = [...this.entries.values()].map((e) => e.data);
-        writeFileSync(REMINDER_FILE, JSON.stringify(data, null, 2));
+        writeFileSync(REMINDER_FILE_PATH, JSON.stringify(data, null, 2));
         logger.info(`💾 ${data.length}件のリマインダーを保存`);
     }
 
@@ -158,7 +169,7 @@ class Reminder {
                 data.channelId,
             )) as TextChannel | null;
 
-        if (channel) {
+            if (channel) {
                 await channel.send(data.message);
                 logger.info(`📤 送信完了: ${data.id} -> #${channel.name}`);
             } else {
@@ -173,9 +184,9 @@ class Reminder {
 
     /** ファイルから読み込み */
     private load(): ReminderData[] {
-        if (!existsSync(REMINDER_FILE)) return [];
+        if (!existsSync(REMINDER_FILE_PATH)) return [];
         try {
-            return JSON.parse(readFileSync(REMINDER_FILE, "utf-8"));
+            return JSON.parse(readFileSync(REMINDER_FILE_PATH, "utf-8"));
         } catch (error) {
             logger.error("❌ リマインダーファイル読み込みエラー:", error);
             return [];

@@ -6,10 +6,10 @@
 
 import {
     type ChatInputCommandInteraction,
-    type InteractionReplyOptions,
     Client,
     Collection,
     GatewayIntentBits,
+    type InteractionReplyOptions,
     MessageFlags,
 } from "discord.js";
 import { registerCommands } from "./commands";
@@ -23,8 +23,8 @@ import {
     setClient,
     stopReminders,
 } from "./reminder";
-import { logger } from "./utils/logger";
 import type { Command } from "./types";
+import { logger } from "./utils/logger";
 
 // discord.js の Client 型を拡張
 declare module "discord.js" {

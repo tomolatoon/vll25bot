@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 /**
  * ログレベル定義
@@ -56,7 +56,7 @@ class Logger {
      * ログファイルへの書き込み
      */
     private writeToFile(message: string) {
-        fs.appendFile(this.logFilePath, message + "\n", (err) => {
+        fs.appendFile(this.logFilePath, `${message}\n`, (err) => {
             if (err) {
                 console.error("ログファイルへの書き込みに失敗しました:", err);
             }
@@ -73,15 +73,11 @@ class Logger {
         // ファイル書き込み用メッセージ (引数もJSON化して記録)
         let fileMessage = formattedMessage;
         if (args.length > 0) {
-            fileMessage +=
-                " " +
-                args
-                    .map((arg) =>
-                        typeof arg === "object"
-                            ? JSON.stringify(arg)
-                            : String(arg),
-                    )
-                    .join(" ");
+            fileMessage += ` ${args
+                .map((arg) =>
+                    typeof arg === "object" ? JSON.stringify(arg) : String(arg),
+                )
+                .join(" ")}`;
         }
         this.writeToFile(fileMessage);
 
