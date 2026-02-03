@@ -7,7 +7,6 @@
 import {
     ActionRowBuilder,
     ButtonBuilder,
-    type ButtonInteraction,
     ButtonStyle,
     ChannelType,
     type ChatInputCommandInteraction,
@@ -299,7 +298,7 @@ type CancelReminderResult =
  * @param userId 実行者のユーザーID
  * @param guildId ギルドID（コマンドからの削除時のみ指定）
  */
-function cancelReminder(
+export function cancelReminder(
     id: string,
     userId: string,
     guildId?: string,
@@ -359,32 +358,3 @@ async function handleRemove(
     });
 }
 
-/** リマインダー解除ボタンの処理 */
-export async function handleRemindCancelButton(
-    interaction: ButtonInteraction,
-    id: string,
-): Promise<void> {
-    const result = cancelReminder(id, interaction.user.id);
-
-    if (!result.success) {
-        if (result.reason === "not_owner") {
-            await interaction.reply({
-                content: "❌ 自分が登録したリマインダーのみ解除できます。",
-                flags: MessageFlags.Ephemeral,
-            });
-        } else {
-            // not_found, already_done の場合
-            // wrong_guild は発生しない想定
-            await interaction.update({
-                content: `❓ リマインダー \`${id}\` は既に解除済みです。`,
-                components: [],
-            });
-        }
-        return;
-    }
-
-    await interaction.update({
-        content: `🗑️ リマインダー \`${id}\` を解除しました。`,
-        components: [],
-    });
-}

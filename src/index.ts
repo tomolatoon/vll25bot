@@ -12,24 +12,25 @@ import {
     type InteractionReplyOptions,
     MessageFlags,
 } from "discord.js";
-import { registerCommands } from "./commands";
 import {
-    BUTTON_ID_REMIND_CANCEL,
-    handleRemindCancelButton,
-} from "./commands/remind";
+    dispatchButtonInteraction,
+    registerButtonHandlers,
+} from "./buttons";
+import { registerCommands } from "./commands";
 import {
     restoreReminders,
     saveReminders,
     setClient,
     stopReminders,
 } from "./reminder";
-import type { Command } from "./types";
+import type { ButtonHandler, Command } from "./types";
 import { logger } from "./utils/logger";
 
 // discord.js の Client 型を拡張
 declare module "discord.js" {
     interface Client {
         commands: Collection<string, Command>;
+        buttonHandlers: Collection<string, ButtonHandler>;
     }
 }
 
@@ -42,9 +43,11 @@ const client = new Client({
     ],
 });
 
-// コマンドを登録
+// コマンドとボタンハンドラーを登録
 client.commands = new Collection();
+client.buttonHandlers = new Collection();
 registerCommands(client);
+registerButtonHandlers(client);
 
 // Bot起動時（v15対応: ready → clientReady）
 client.once("clientReady", () => {
@@ -58,13 +61,9 @@ client.once("clientReady", () => {
 
 // スラッシュコマンド実行時
 client.on("interactionCreate", async (interaction) => {
-    // ボタンクリック処理
+    // ボタンクリック処理（レジストリベースでディスパッチ）
     if (interaction.isButton()) {
-        const [action, id] = interaction.customId.split(":");
-
-        if (action === BUTTON_ID_REMIND_CANCEL && id) {
-            await handleRemindCancelButton(interaction, id);
-        }
+        await dispatchButtonInteraction(interaction);
         return;
     }
 
