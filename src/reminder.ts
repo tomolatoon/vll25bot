@@ -288,24 +288,31 @@ class Reminder {
             return;
         }
 
+        // 送信直前にDBから最新のデータを取得（編集されている可能性があるため）
+        const latestData = this.findById(data.id);
+        if (!latestData) {
+            logger.warn(`⚠️ リマインダー ${data.id} が見つかりません（既に削除済み）`);
+            return;
+        }
+
         try {
             const channel = (await this.client.channels.fetch(
-                data.channelId,
+                latestData.channelId,
             )) as TextChannel | null;
 
             if (channel) {
-                await channel.send(data.message);
-                logger.info(`📤 送信完了: ${data.id} -> #${channel.name}`);
+                await channel.send(latestData.message);
+                logger.info(`📤 送信完了: ${latestData.id} -> #${channel.name}`);
             } else {
-                logger.error(`❌ チャンネル未発見: ${data.channelId}`);
+                logger.error(`❌ チャンネル未発見: ${latestData.channelId}`);
             }
         } catch (error) {
-            logger.error(`❌ 送信エラー (${data.id}):`, error);
+            logger.error(`❌ 送信エラー (${latestData.id}):`, error);
         }
 
         // 送信成功/失敗に関わらず(チャネル不明等は回復不能なので) 削除
         // クライアント未設定エラー以外のエラー（権限など）はここで削除される
-        this.removeDbRecord(data.id);
+        this.removeDbRecord(latestData.id);
     }
 
     /** DBからレコード削除（内部用） */
