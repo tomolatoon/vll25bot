@@ -4,7 +4,7 @@
  * リマインダーの最新状態を取得して表示を更新します。
  */
 
-import { type ButtonInteraction } from "discord.js";
+import type { ButtonInteraction } from "discord.js";
 import { buildReminderButtons, buildReminderMessage } from "../commands/remind";
 import { getReminderById } from "../reminder";
 import type { ButtonHandler } from "../types";

@@ -266,7 +266,14 @@ type JpPeriodUnit = "年" | "ヶ月" | "か月" | "カ月" | "週" | "日";
  */
 const jpPeriodUnit: Parser<JpPeriodUnit> = map(
     cat([
-        or([str("ヶ月"), str("か月"), str("カ月"), str("年"), str("週"), str("日")]),
+        or([
+            str("ヶ月"),
+            str("か月"),
+            str("カ月"),
+            str("年"),
+            str("週"),
+            str("日"),
+        ]),
         opt(str("間")),
     ]),
     ([unit]) => unit as JpPeriodUnit,
@@ -381,7 +388,10 @@ type EnPeriodUnit = "year" | "month" | "week" | "day";
  * <EnPeriodUnit> ::= ("year" | "month" | "week" | "day") ("s")?
  */
 const enPeriodUnit: Parser<EnPeriodUnit> = map(
-    cat([or([str("year"), str("month"), str("week"), str("day")]), opt(str("s"))]),
+    cat([
+        or([str("year"), str("month"), str("week"), str("day")]),
+        opt(str("s")),
+    ]),
     ([unit]) => unit as EnPeriodUnit,
 );
 

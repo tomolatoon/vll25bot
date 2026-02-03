@@ -55,15 +55,25 @@ export class Database {
     private migrateAddReplyMessageColumns() {
         try {
             // カラムが存在するかチェック
-            const tableInfo = this.db.query("PRAGMA table_info(reminders)").all() as Array<{
+            const tableInfo = this.db
+                .query("PRAGMA table_info(reminders)")
+                .all() as Array<{
                 name: string;
             }>;
-            const hasReplyMessageId = tableInfo.some((col) => col.name === "replyMessageId");
+            const hasReplyMessageId = tableInfo.some(
+                (col) => col.name === "replyMessageId",
+            );
 
             if (!hasReplyMessageId) {
-                logger.info("🔄 マイグレーション: replyMessageId, replyChannelId カラムを追加中...");
-                this.db.run("ALTER TABLE reminders ADD COLUMN replyMessageId TEXT");
-                this.db.run("ALTER TABLE reminders ADD COLUMN replyChannelId TEXT");
+                logger.info(
+                    "🔄 マイグレーション: replyMessageId, replyChannelId カラムを追加中...",
+                );
+                this.db.run(
+                    "ALTER TABLE reminders ADD COLUMN replyMessageId TEXT",
+                );
+                this.db.run(
+                    "ALTER TABLE reminders ADD COLUMN replyChannelId TEXT",
+                );
                 logger.info("✅ マイグレーション完了");
             }
         } catch (error) {
@@ -74,14 +84,20 @@ export class Database {
     /**
      * クエリ実行 (SELECT)
      */
-    query<T = unknown>(sql: string, params: (string | number | boolean | null)[] = []): T[] {
+    query<T = unknown>(
+        sql: string,
+        params: (string | number | boolean | null)[] = [],
+    ): T[] {
         return this.db.query(sql).all(...params) as T[];
     }
 
     /**
      * クエリ実行 (単一行取得)
      */
-    get<T = unknown>(sql: string, params: (string | number | boolean | null)[] = []): T | null {
+    get<T = unknown>(
+        sql: string,
+        params: (string | number | boolean | null)[] = [],
+    ): T | null {
         return this.db.query(sql).get(...params) as T | null;
     }
 

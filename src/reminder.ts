@@ -160,7 +160,8 @@ class Reminder {
 
             // 更新項目の準備
             const newMessage = updates.message ?? existing.message;
-            const newRemindAt = updates.remindAt?.getTime() ?? existing.remindAt;
+            const newRemindAt =
+                updates.remindAt?.getTime() ?? existing.remindAt;
             const newChannelId = updates.channelId ?? existing.channelId;
             const newReplyMessageId =
                 updates.replyMessageId ?? existing.replyMessageId ?? null;
@@ -291,7 +292,9 @@ class Reminder {
         // 送信直前にDBから最新のデータを取得（編集されている可能性があるため）
         const latestData = this.findById(data.id);
         if (!latestData) {
-            logger.warn(`⚠️ リマインダー ${data.id} が見つかりません（既に削除済み）`);
+            logger.warn(
+                `⚠️ リマインダー ${data.id} が見つかりません（既に削除済み）`,
+            );
             return;
         }
 
@@ -302,7 +305,9 @@ class Reminder {
 
             if (channel) {
                 await channel.send(latestData.message);
-                logger.info(`📤 送信完了: ${latestData.id} -> #${channel.name}`);
+                logger.info(
+                    `📤 送信完了: ${latestData.id} -> #${channel.name}`,
+                );
             } else {
                 logger.error(`❌ チャンネル未発見: ${latestData.channelId}`);
             }

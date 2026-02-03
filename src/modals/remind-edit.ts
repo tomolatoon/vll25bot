@@ -103,9 +103,7 @@ export const remindEditModal: ModalHandler = {
         const changes: string[] = [];
         if (newMessage) changes.push(`📝 メッセージ: ${newMessage}`);
         if (newRemindAt)
-            changes.push(
-                `📅 日時: ${newRemindAt.toLocaleString("ja-JP")}`,
-            );
+            changes.push(`📅 日時: ${newRemindAt.toLocaleString("ja-JP")}`);
 
         // 元のリプライメッセージを更新
         if (interaction.message) {
@@ -120,23 +118,35 @@ export const remindEditModal: ModalHandler = {
 
                 // Ephemeral でメッセージリンク付きで返信
                 await interaction.reply({
-                    content: `✅ リマインダーを更新しました！\n\n${changes.join("\n")}\n\n🔗 [リマインダーを表示](${messageLink})`,
+                    content: `✅ リマインダーを更新しました！
+
+${changes.join("\n")}
+
+🔗 [リマインダーを表示](${messageLink})`,
                     flags: MessageFlags.Ephemeral,
                 });
             } catch (error) {
                 // メッセージが削除されている等のエラーは無視
                 console.error("Failed to update original message:", error);
-                
+
                 // エラー時は通常のリプライ
                 await interaction.reply({
-                    content: `✅ リマインダーを更新しました！\n\n${changes.join("\n")}\n\n🆔 ID: \`${id}\``,
+                    content: `✅ リマインダーを更新しました！
+
+${changes.join("\n")}
+
+🆔 ID: \`${id}\``,
                     flags: MessageFlags.Ephemeral,
                 });
             }
         } else {
             // メッセージが見つからない場合
             await interaction.reply({
-                content: `✅ リマインダーを更新しました！\n\n${changes.join("\n")}\n\n🆔 ID: \`${id}\``,
+                content: `✅ リマインダーを更新しました！
+
+${changes.join("\n")}
+
+🆔 ID: \`${id}\``,
                 flags: MessageFlags.Ephemeral,
             });
         }

@@ -1,4 +1,4 @@
-import { db, type ReminderRow } from "../db/client";
+import { type ReminderRow, db } from "../db/client";
 
 console.log("🔍 データベースの内容を確認します...");
 
@@ -8,7 +8,9 @@ try {
     );
     console.log(`📊 登録総数: ${count?.count ?? 0} 件`);
 
-    const reminders = db.query<ReminderRow>("SELECT * FROM reminders ORDER BY remindAt ASC");
+    const reminders = db.query<ReminderRow>(
+        "SELECT * FROM reminders ORDER BY remindAt ASC",
+    );
 
     if (reminders.length > 0) {
         console.log("\n📋 リマインダー一覧:");

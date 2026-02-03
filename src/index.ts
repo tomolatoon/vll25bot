@@ -6,15 +6,9 @@ import {
     type InteractionReplyOptions,
     MessageFlags,
 } from "discord.js";
-import {
-    dispatchButtonInteraction,
-    registerButtonHandlers,
-} from "./buttons";
+import { dispatchButtonInteraction, registerButtonHandlers } from "./buttons";
 import { registerCommands } from "./commands";
-import {
-    dispatchModalInteraction,
-    registerModalHandlers,
-} from "./modals";
+import { dispatchModalInteraction, registerModalHandlers } from "./modals";
 import {
     restoreReminders,
     saveReminders,

@@ -16,10 +16,10 @@ import {
 } from "discord.js";
 import { parseFutureDateTime } from "../lib/parser/date-parser";
 import {
+    type ReminderData,
     createReminder,
     getReminderById,
     getRemindersByGuild,
-    type ReminderData,
     stopReminder,
     updateReminder,
 } from "../reminder";
@@ -35,7 +35,13 @@ export const BUTTON_ID_REMIND_CANCEL = "remind_cancel";
  */
 export function buildReminderMessage(reminder: ReminderData): string {
     const remindAt = new Date(reminder.remindAt);
-    return `✅ リマインダー\n\n📅 **日時**: ${remindAt.toLocaleString("ja-JP")}\n📝 **メッセージ**: ${reminder.message}\n📢 **チャンネル**: <#${reminder.channelId}>\n🆔 **ID**: \`${reminder.id}\``;
+    return `✅ リマインダーを登録しました！
+
+📅 **日時**: ${remindAt.toLocaleString("ja-JP")}
+📝 **メッセージ**: ${reminder.message}
+📢 **チャンネル**: <#${reminder.channelId}>
+🆔 **ID**: \`${reminder.id}\`
+`;
 }
 
 /**
@@ -236,8 +242,8 @@ async function handleAdd(
 
     if (!interaction.guildId) {
         await interaction.reply({
-             content: "❌ このコマンドはサーバー内でのみ使用できます。",
-             flags: MessageFlags.Ephemeral,
+            content: "❌ このコマンドはサーバー内でのみ使用できます。",
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -262,15 +268,18 @@ async function handleAdd(
     // ボタンを作成
     const row = buildReminderButtons(reminder.id);
 
-    const reply = await interaction.reply({
+    await interaction.reply({
         content: buildReminderMessage(reminder),
         components: [row],
     });
 
+    // リプライメッセージを取得
+    const replyMessage = await interaction.fetchReply();
+
     // リプライメッセージのIDを保存
     updateReminder(reminder.id, {
-        replyMessageId: reply.id,
-        replyChannelId: interaction.channelId,
+        replyMessageId: replyMessage.id,
+        replyChannelId: replyMessage.channelId,
     });
 }
 
@@ -322,7 +331,9 @@ async function handleList(
         .join("\n\n");
 
     await interaction.reply({
-        content: `📋 **${filterDesc}リマインダー（${reminders.length}件）**\n\n${list}`,
+        content: `📋 **${filterDesc}リマインダー（${reminders.length}件）**
+
+${list}`,
         flags: MessageFlags.Ephemeral,
     });
 }
@@ -350,16 +361,10 @@ async function handleListAll(
     const list = reminders
         .map((r) => {
             const date = new Date(r.remindAt);
-            return (
-                `🆔 \`${r.id}\`\n` +
-                `　📅 ${date.toLocaleString("ja-JP")}\n` +
-                `　📢 <#${r.channelId}>\n` +
-                `　📝 ${
-                    r.message.length > 30
-                        ? `${r.message.substring(0, 30)}...`
-                        : r.message
-                }`
-            );
+            return `🆔 \`${r.id}\`
+　📅 ${date.toLocaleString("ja-JP")}
+　📢 <#${r.channelId}>
+　📝 ${r.message.length > 30 ? `${r.message.substring(0, 30)}...` : r.message}`;
         })
         .join("\n\n");
 
@@ -375,8 +380,7 @@ async function handleModify(
 ): Promise<void> {
     const id = interaction.options.getString("id", true);
     const newMessage = interaction.options.getString("message") || undefined;
-    const datetimeStr =
-        interaction.options.getString("datetime") || undefined;
+    const datetimeStr = interaction.options.getString("datetime") || undefined;
     const newChannel =
         (interaction.options.getChannel("channel") as TextChannel | null) ||
         undefined;
@@ -476,7 +480,7 @@ async function handleModify(
                 const message = await channel.messages.fetch(
                     updated.replyMessageId,
                 );
-                
+
                 // 元メッセージを更新
                 await message.edit({
                     content: buildReminderMessage(updated),
@@ -488,17 +492,25 @@ async function handleModify(
 
                 // コマンドには Ephemeral でメッセージリンク付きで返信
                 await interaction.reply({
-                    content: `✅ リマインダーを更新しました！\n\n${changes.join("\n")}\n\n🔗 [リマインダーを表示](${messageLink})`,
+                    content: `✅ リマインダーを更新しました！
+
+${changes.join("\n")}
+
+🔗 [リマインダーを表示](${messageLink})`,
                     flags: MessageFlags.Ephemeral,
                 });
             }
         } catch (error) {
             // メッセージが削除されている等のエラーは無視
             console.error("Failed to update original message:", error);
-            
+
             // エラー時は通常のリプライ
             await interaction.reply({
-                content: `✅ リマインダーを更新しました！\n\n${changes.join("\n")}\n\n🆔 ID: \`${id}\``,
+                content: `✅ リマインダーを更新しました！
+
+${changes.join("\n")}
+
+🆔 ID: \`${id}\``,
                 flags: MessageFlags.Ephemeral,
             });
         }
@@ -510,10 +522,14 @@ async function handleModify(
                 replyChannelId: updated.replyChannelId,
             },
         );
-        
+
         // 元メッセージが見つからない場合は通常のリプライ
         await interaction.reply({
-            content: `✅ リマインダーを更新しました！\n\n${changes.join("\n")}\n\n🆔 ID: \`${id}\``,
+            content: `✅ リマインダーを更新しました！
+
+${changes.join("\n")}
+
+🆔 ID: \`${id}\``,
             flags: MessageFlags.Ephemeral,
         });
     }
@@ -566,11 +582,7 @@ async function handleRemove(
 ): Promise<void> {
     const id = interaction.options.getString("id", true);
     if (!interaction.guildId) return;
-    const result = cancelReminder(
-        id,
-        interaction.user.id,
-        interaction.guildId,
-    );
+    const result = cancelReminder(id, interaction.user.id, interaction.guildId);
 
     if (!result.success) {
         const errorMessages = {
@@ -592,4 +604,3 @@ async function handleRemove(
         content: `🗑️ リマインダー \`${id}\` を解除しました。`,
     });
 }
-

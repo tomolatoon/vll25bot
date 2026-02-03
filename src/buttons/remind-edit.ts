@@ -6,11 +6,11 @@
 
 import {
     ActionRowBuilder,
+    type ButtonInteraction,
     MessageFlags,
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    type ButtonInteraction,
 } from "discord.js";
 import { getReminderById } from "../reminder";
 import type { ButtonHandler } from "../types";

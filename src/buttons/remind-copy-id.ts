@@ -5,7 +5,7 @@
  * デスクトップ版Discordではコピーボタンが表示されます。
  */
 
-import { MessageFlags, type ButtonInteraction } from "discord.js";
+import { type ButtonInteraction, MessageFlags } from "discord.js";
 import type { ButtonHandler } from "../types";
 
 /** リマインダーIDコピーボタンのIDプレフィックス */

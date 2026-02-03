@@ -4,11 +4,8 @@
  * リマインダー登録時に表示される「登録解除」ボタンの処理を担当します。
  */
 
-import { MessageFlags, type ButtonInteraction } from "discord.js";
-import {
-    BUTTON_ID_REMIND_CANCEL,
-    cancelReminder,
-} from "../commands/remind";
+import { type ButtonInteraction, MessageFlags } from "discord.js";
+import { BUTTON_ID_REMIND_CANCEL, cancelReminder } from "../commands/remind";
 import type { ButtonHandler } from "../types";
 
 /**
