@@ -1,6 +1,7 @@
 import type {
     ButtonInteraction,
     ChatInputCommandInteraction,
+    ModalSubmitInteraction,
     SlashCommandBuilder,
     SlashCommandOptionsOnlyBuilder,
     SlashCommandSubcommandsOnlyBuilder,
@@ -30,6 +31,23 @@ export interface ButtonHandler {
      * @param id customId から抽出した引数部分
      */
     execute: (interaction: ButtonInteraction, id: string) => Promise<void>;
+}
+
+/**
+ * モーダルハンドラーの共通インターフェース
+ *
+ * モーダルの customId は `{idPrefix}:{引数}` の形式を想定。
+ * 例: "remind_edit_modal:abc123" → idPrefix="remind_edit_modal", id="abc123"
+ */
+export interface ModalHandler {
+    /** モーダルIDのプレフィックス（例: "remind_edit_modal"） */
+    idPrefix: string;
+    /**
+     * モーダル送信時の処理
+     * @param interaction モーダル送信インタラクション
+     * @param id customId から抽出した引数部分
+     */
+    execute: (interaction: ModalSubmitInteraction, id: string) => Promise<void>;
 }
 
 /** おみくじの運勢データ */

@@ -9,9 +9,17 @@
 import type { ButtonInteraction, Client, Collection } from "discord.js";
 import type { ButtonHandler } from "../types";
 import { remindCancelButton } from "./remind-cancel";
+import { remindCopyIdButton } from "./remind-copy-id";
+import { remindEditButton } from "./remind-edit";
+import { remindReloadButton } from "./remind-reload";
 
 // ボタンハンドラー一覧（新しいボタンはここに追加）
-const buttonHandlers: ButtonHandler[] = [remindCancelButton];
+const buttonHandlers: ButtonHandler[] = [
+    remindCancelButton,
+    remindEditButton,
+    remindCopyIdButton,
+    remindReloadButton,
+];
 
 /**
  * クライアントにボタンハンドラーを登録

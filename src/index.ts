@@ -1,9 +1,3 @@
-/**
- * index.ts - Discord Bot のメインエントリーポイント
- *
- * Botの起動とイベントハンドリングを担当します。
- */
-
 import {
     type ChatInputCommandInteraction,
     Client,
@@ -18,12 +12,16 @@ import {
 } from "./buttons";
 import { registerCommands } from "./commands";
 import {
+    dispatchModalInteraction,
+    registerModalHandlers,
+} from "./modals";
+import {
     restoreReminders,
     saveReminders,
     setClient,
     stopReminders,
 } from "./reminder";
-import type { ButtonHandler, Command } from "./types";
+import type { ButtonHandler, Command, ModalHandler } from "./types";
 import { logger } from "./utils/logger";
 
 // discord.js の Client 型を拡張
@@ -31,6 +29,7 @@ declare module "discord.js" {
     interface Client {
         commands: Collection<string, Command>;
         buttonHandlers: Collection<string, ButtonHandler>;
+        modalHandlers: Collection<string, ModalHandler>;
     }
 }
 
@@ -43,11 +42,13 @@ const client = new Client({
     ],
 });
 
-// コマンドとボタンハンドラーを登録
+// コマンド、ボタン、モーダルハンドラーを登録
 client.commands = new Collection();
 client.buttonHandlers = new Collection();
+client.modalHandlers = new Collection();
 registerCommands(client);
 registerButtonHandlers(client);
+registerModalHandlers(client);
 
 // Bot起動時（v15対応: ready → clientReady）
 client.once("clientReady", () => {
@@ -64,6 +65,12 @@ client.on("interactionCreate", async (interaction) => {
     // ボタンクリック処理（レジストリベースでディスパッチ）
     if (interaction.isButton()) {
         await dispatchButtonInteraction(interaction);
+        return;
+    }
+
+    // モーダル送信処理（レジストリベースでディスパッチ）
+    if (interaction.isModalSubmit()) {
+        await dispatchModalInteraction(interaction);
         return;
     }
 

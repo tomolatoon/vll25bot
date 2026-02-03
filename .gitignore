@@ -22,3 +22,6 @@ reminders.json
 reminders_bkp.json
 reminders.json.migrated
 reminders.db
+reminders.db-journal
+
+tsc-trace/
