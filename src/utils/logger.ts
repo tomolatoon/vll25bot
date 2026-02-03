@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 /**
  * ログレベル定義
@@ -56,7 +56,7 @@ class Logger {
      * ログファイルへの書き込み
      */
     private writeToFile(message: string) {
-        fs.appendFile(this.logFilePath, message + "\n", (err) => {
+        fs.appendFile(this.logFilePath, `${message}\n`, (err) => {
             if (err) {
                 console.error("ログファイルへの書き込みに失敗しました:", err);
             }
@@ -66,22 +66,18 @@ class Logger {
     /**
      * 共通ログ出力処理
      */
-    private print(level: LogLevel, message: string, ...args: any[]) {
+    private print(level: LogLevel, message: string, ...args: unknown[]) {
         const timestamp = this.getTimestamp();
         const formattedMessage = `[${timestamp}] [${level}] ${message}`;
 
         // ファイル書き込み用メッセージ (引数もJSON化して記録)
         let fileMessage = formattedMessage;
         if (args.length > 0) {
-            fileMessage +=
-                " " +
-                args
-                    .map((arg) =>
-                        typeof arg === "object"
-                            ? JSON.stringify(arg)
-                            : String(arg),
-                    )
-                    .join(" ");
+            fileMessage += ` ${args
+                .map((arg) =>
+                    typeof arg === "object" ? JSON.stringify(arg) : String(arg),
+                )
+                .join(" ")}`;
         }
         this.writeToFile(fileMessage);
 
@@ -112,23 +108,23 @@ class Logger {
         consoleMethod(`${colorCode}${formattedMessage}\x1b[0m`, ...args);
     }
 
-    public log(message: string, ...args: any[]) {
+    public log(message: string, ...args: unknown[]) {
         this.print("INFO", message, ...args);
     }
 
-    public info(message: string, ...args: any[]) {
+    public info(message: string, ...args: unknown[]) {
         this.print("INFO", message, ...args);
     }
 
-    public warn(message: string, ...args: any[]) {
+    public warn(message: string, ...args: unknown[]) {
         this.print("WARN", message, ...args);
     }
 
-    public error(message: string, ...args: any[]) {
+    public error(message: string, ...args: unknown[]) {
         this.print("ERROR", message, ...args);
     }
 
-    public debug(message: string, ...args: any[]) {
+    public debug(message: string, ...args: unknown[]) {
         this.print("DEBUG", message, ...args);
     }
 }

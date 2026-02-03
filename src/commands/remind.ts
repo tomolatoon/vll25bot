@@ -7,7 +7,6 @@
 import {
     ActionRowBuilder,
     ButtonBuilder,
-    type ButtonInteraction,
     ButtonStyle,
     ChannelType,
     type ChatInputCommandInteraction,
@@ -148,13 +147,21 @@ async function handleAdd(
         return;
     }
 
+    if (!interaction.guildId) {
+        await interaction.reply({
+             content: "❌ このコマンドはサーバー内でのみ使用できます。",
+             flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
     // リマインダー作成
     const reminder = createReminder(
         targetChannel.id,
         message,
         remindAt,
         interaction.user.id,
-        interaction.guildId!,
+        interaction.guildId,
     );
 
     if (!reminder) {
@@ -186,7 +193,8 @@ async function handleAdd(
 async function handleList(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-    const guildId = interaction.guildId!;
+    if (!interaction.guildId) return;
+    const guildId = interaction.guildId;
     const targetChannel =
         (interaction.options.getChannel("channel") as TextChannel | null) ||
         (interaction.channel as TextChannel);
@@ -238,7 +246,8 @@ async function handleList(
 async function handleListAll(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-    const guildId = interaction.guildId!;
+    if (!interaction.guildId) return;
+    const guildId = interaction.guildId;
     const userId = interaction.user.id;
 
     const reminders = getRemindersByGuild(guildId).filter(
@@ -289,7 +298,7 @@ type CancelReminderResult =
  * @param userId 実行者のユーザーID
  * @param guildId ギルドID（コマンドからの削除時のみ指定）
  */
-function cancelReminder(
+export function cancelReminder(
     id: string,
     userId: string,
     guildId?: string,
@@ -321,10 +330,11 @@ async function handleRemove(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     const id = interaction.options.getString("id", true);
+    if (!interaction.guildId) return;
     const result = cancelReminder(
         id,
         interaction.user.id,
-        interaction.guildId!,
+        interaction.guildId,
     );
 
     if (!result.success) {
@@ -348,32 +358,3 @@ async function handleRemove(
     });
 }
 
-/** リマインダー解除ボタンの処理 */
-export async function handleRemindCancelButton(
-    interaction: ButtonInteraction,
-    id: string,
-): Promise<void> {
-    const result = cancelReminder(id, interaction.user.id);
-
-    if (!result.success) {
-        if (result.reason === "not_owner") {
-            await interaction.reply({
-                content: "❌ 自分が登録したリマインダーのみ解除できます。",
-                flags: MessageFlags.Ephemeral,
-            });
-        } else {
-            // not_found, already_done の場合
-            // wrong_guild は発生しない想定
-            await interaction.update({
-                content: `❓ リマインダー \`${id}\` は既に解除済みです。`,
-                components: [],
-            });
-        }
-        return;
-    }
-
-    await interaction.update({
-        content: `🗑️ リマインダー \`${id}\` を解除しました。`,
-        components: [],
-    });
-}
