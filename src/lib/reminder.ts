@@ -143,7 +143,6 @@ export function buildChangesArray(updates: {
  *
  * @param updated 更新後のリマインダーデータ
  * @param changes 変更内容の配列
- * @param originalMessage 元メッセージの情報（オプション）
  * @returns 返信メッセージの内容
  *
  * @事前条件 updated は有効なリマインダーデータ
@@ -152,11 +151,6 @@ export function buildChangesArray(updates: {
 export function buildUpdateResponseContent(
     updated: ReminderData,
     changes: string[],
-    originalMessage?: {
-        guildId: string;
-        channelId: string;
-        messageId: string;
-    },
 ): string {
     const baseMessage = `✅ リマインダーを更新しました！
 
@@ -164,8 +158,8 @@ ${changes.join("\n")}
 
 `;
 
-    if (originalMessage) {
-        const messageLink = `https://discord.com/channels/${originalMessage.guildId}/${originalMessage.channelId}/${originalMessage.messageId}`;
+    if (updated.replyMessageId && updated.replyChannelId) {
+        const messageLink = `https://discord.com/channels/${updated.guildId}/${updated.replyChannelId}/${updated.replyMessageId}`;
         return `${baseMessage}🔗 [リマインダーを表示](${messageLink})`;
     }
 

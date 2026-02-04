@@ -1,4 +1,5 @@
 import type {
+    AnySelectMenuInteraction,
     ButtonInteraction,
     ChatInputCommandInteraction,
     ModalSubmitInteraction,
@@ -31,6 +32,25 @@ export interface ButtonHandler {
      * @param id customId から抽出した引数部分
      */
     execute: (interaction: ButtonInteraction, id: string) => Promise<void>;
+}
+
+/**
+ * セレクトメニューハンドラーの共通インターフェース
+ *
+ * セレクトメニューの customId は `{idPrefix}:{引数}` の形式を想定。
+ */
+export interface SelectMenuHandler {
+    /** セレクトメニューIDのプレフィックス */
+    idPrefix: string;
+    /**
+     * セレクトメニュー選択時の処理
+     * @param interaction セレクトメニューインタラクション
+     * @param id customId から抽出した引数部分
+     */
+    execute: (
+        interaction: AnySelectMenuInteraction,
+        id: string,
+    ) => Promise<void>;
 }
 
 /**

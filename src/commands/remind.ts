@@ -16,6 +16,17 @@ import {
 } from "discord.js";
 import { parseFutureDateTime } from "../lib/parser/date-parser";
 import {
+    type ListState,
+    type SortOrder,
+    buildActionButtons,
+    buildListContent,
+    buildNavButtons,
+    buildSelectMenu,
+    filterAndSortReminders,
+    getPageItems,
+    getTotalPages,
+} from "../lib/remind-list";
+import {
     buildChangesArray,
     buildUpdateResponseContent,
     validateDateTimeInput,
@@ -23,10 +34,10 @@ import {
 } from "../lib/reminder";
 import {
     type ReminderData,
+    cancelReminderTask,
     createReminder,
     getReminderById,
     getRemindersByGuild,
-    stopReminder,
     updateReminder,
 } from "../reminder";
 import type { Command } from "../types";
@@ -125,12 +136,12 @@ export const remind: Command = {
         .addSubcommand((subcommand) =>
             subcommand
                 .setName("list")
-                .setDescription("チャンネルのリマインダーを表示します")
+                .setDescription("リマインダー一覧を表示します")
                 .addChannelOption((option) =>
                     option
                         .setName("channel")
                         .setDescription(
-                            "表示するリマインダーの送信先チャンネル（省略で現在のチャンネル）",
+                            "送信先チャンネル（省略で全チャンネル）",
                         )
                         .addChannelTypes(ChannelType.GuildText)
                         .setRequired(false),
@@ -138,16 +149,30 @@ export const remind: Command = {
                 .addUserOption((option) =>
                     option
                         .setName("user")
-                        .setDescription(
-                            "表示するリマインダーの作成者（省略で全員）",
-                        )
+                        .setDescription("作成者（省略で自分のみ）")
                         .setRequired(false),
+                )
+                .addStringOption((option) =>
+                    option
+                        .setName("order")
+                        .setDescription("ソート順（省略で昇順）")
+                        .setRequired(false)
+                        .addChoices(
+                            { name: "昇順（古い順）", value: "asc" },
+                            { name: "降順（新しい順）", value: "desc" },
+                        ),
                 ),
         )
         .addSubcommand((subcommand) =>
             subcommand
-                .setName("list_all")
-                .setDescription("ギルド内の自分のリマインダーを全て表示します"),
+                .setName("show")
+                .setDescription("リマインダーの詳細を表示します")
+                .addStringOption((option) =>
+                    option
+                        .setName("id")
+                        .setDescription("表示するリマインダーのID")
+                        .setRequired(true),
+                ),
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -183,12 +208,12 @@ export const remind: Command = {
         )
         .addSubcommand((subcommand) =>
             subcommand
-                .setName("remove")
-                .setDescription("リマインダーを削除します")
+                .setName("cancel")
+                .setDescription("リマインダーを解除します")
                 .addStringOption((option) =>
                     option
                         .setName("id")
-                        .setDescription("削除するリマインダーのID")
+                        .setDescription("解除するリマインダーのID")
                         .setRequired(true),
                 ),
         ),
@@ -203,14 +228,14 @@ export const remind: Command = {
             case "list":
                 await handleList(interaction);
                 break;
-            case "list_all":
-                await handleListAll(interaction);
+            case "show":
+                await handleShow(interaction);
                 break;
             case "modify":
                 await handleModify(interaction);
                 break;
-            case "remove":
-                await handleRemove(interaction);
+            case "cancel":
+                await handleCancel(interaction);
                 break;
         }
     },
@@ -289,93 +314,102 @@ async function handleAdd(
     });
 }
 
-/** リマインダー一覧 (チャンネル指定) */
+/** リマインダー一覧 */
 async function handleList(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     if (!interaction.guildId) return;
-    const guildId = interaction.guildId;
-    const targetChannel =
-        (interaction.options.getChannel("channel") as TextChannel | null) ||
-        (interaction.channel as TextChannel);
-    // user 省略時は全員のリマインダーを表示
+
+    const targetChannel = interaction.options.getChannel(
+        "channel",
+    ) as TextChannel | null;
     const targetUser = interaction.options.getUser("user");
+    const order =
+        (interaction.options.getString("order") as SortOrder | null) || "asc";
 
-    const reminders = getRemindersByGuild(guildId).filter(
-        (r) =>
-            r.channelId === targetChannel.id &&
-            (targetUser === null || r.createdBy === targetUser.id),
-    );
+    // ページネーション状態を初期化
+    const state: ListState = {
+        page: 0,
+        order,
+        channelId: targetChannel?.id,
+        // user 省略時は自分のみ表示
+        userId: targetUser?.id ?? interaction.user.id,
+        guildId: interaction.guildId,
+    };
 
-    // フィルター条件の説明テキストを作成
-    const filterDesc =
-        targetUser === null
-            ? `<#${targetChannel.id}> の`
-            : `<#${targetChannel.id}> の <@${targetUser.id}> が登録した`;
+    // リマインダーを取得・フィルター・ソート
+    const allReminders = getRemindersByGuild(interaction.guildId);
+    const filtered = filterAndSortReminders(allReminders, state);
+    const totalPages = getTotalPages(filtered.length);
+    const pageItems = getPageItems(filtered, state.page);
 
-    if (reminders.length === 0) {
+    if (filtered.length === 0) {
         await interaction.reply({
-            content: `📭 ${filterDesc}リマインダーはありません。`,
+            content: "📭 リマインダーはありません。",
             flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
-    const list = reminders
-        .map((r) => {
-            const date = new Date(r.remindAt);
-            return (
-                `🆔 \`${r.id}\`\n` +
-                `　📅 ${date.toLocaleString("ja-JP")}\n` +
-                `　📝 ${
-                    r.message.length > 30
-                        ? `${r.message.substring(0, 30)}...`
-                        : r.message
-                }`
-            );
-        })
-        .join("\n\n");
+    // メッセージを構築
+    const content = buildListContent(pageItems, state, totalPages);
+    const selectMenu = buildSelectMenu(pageItems, state);
+    const actionButtons = buildActionButtons(state);
+    const navButtons = buildNavButtons(state, totalPages);
 
     await interaction.reply({
-        content: `📋 **${filterDesc}リマインダー（${reminders.length}件）**
-
-${list}`,
+        content,
+        components: [selectMenu, actionButtons, navButtons],
         flags: MessageFlags.Ephemeral,
     });
 }
 
-/** リマインダー一覧 (ギルド全体) */
-async function handleListAll(
+/** リマインダー詳細表示 */
+async function handleShow(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     if (!interaction.guildId) return;
-    const guildId = interaction.guildId;
-    const userId = interaction.user.id;
 
-    const reminders = getRemindersByGuild(guildId).filter(
-        (r) => r.createdBy === userId,
-    );
+    const id = interaction.options.getString("id", true);
+    const reminder = getReminderById(id);
 
-    if (reminders.length === 0) {
+    if (!reminder) {
         await interaction.reply({
-            content: "📭 このサーバーにあなたのリマインダーはありません。",
+            content: `❌ リマインダー \`${id}\` が見つかりません。`,
             flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
-    const list = reminders
-        .map((r) => {
-            const date = new Date(r.remindAt);
-            return `🆔 \`${r.id}\`
-　📅 ${date.toLocaleString("ja-JP")}
-　📢 <#${r.channelId}>
-　📝 ${r.message.length > 30 ? `${r.message.substring(0, 30)}...` : r.message}`;
-        })
-        .join("\n\n");
+    if (reminder.guildId !== interaction.guildId) {
+        await interaction.reply({
+            content: "❌ このサーバーのリマインダーではありません。",
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
+    const remindAt = new Date(reminder.remindAt);
+    const createdAt = reminder.createdAt
+        ? new Date(reminder.createdAt).toLocaleString("ja-JP")
+        : "不明";
+
+    const content = `🔍 **リマインダー詳細**
+
+🆔 **ID**: \`${reminder.id}\`
+📅 **日時**: ${remindAt.toLocaleString("ja-JP")}
+📢 **チャンネル**: <#${reminder.channelId}>
+👤 **作成者**: <@${reminder.createdBy}>
+📆 **作成日時**: ${createdAt}
+📝 **メッセージ**:
+${reminder.message}`;
+
+    // 操作ボタンを作成
+    const row = buildReminderButtons(reminder.id);
 
     await interaction.reply({
-        content: `📋 **あなたのリマインダー（${reminders.length}件）**\n\n${list}`,
+        content,
+        components: [row],
         flags: MessageFlags.Ephemeral,
     });
 }
@@ -469,17 +503,7 @@ async function handleModify(
     }
 
     // 7. 返信メッセージを生成して送信
-    const responseContent = buildUpdateResponseContent(
-        updated,
-        changes,
-        updated.replyMessageId && updated.replyChannelId
-            ? {
-                  guildId: updated.guildId,
-                  channelId: updated.replyChannelId,
-                  messageId: updated.replyMessageId,
-              }
-            : undefined,
-    );
+    const responseContent = buildUpdateResponseContent(updated, changes);
 
     await interaction.reply({
         content: responseContent,
@@ -520,7 +544,7 @@ export function cancelReminder(
         return { success: false, reason: "not_owner" };
     }
 
-    const stopped = stopReminder(id);
+    const stopped = cancelReminderTask(id);
     if (!stopped) {
         return { success: false, reason: "already_done" };
     }
@@ -528,12 +552,16 @@ export function cancelReminder(
     return { success: true };
 }
 
-/** リマインダー削除 */
-async function handleRemove(
+/** リマインダー解除 */
+async function handleCancel(
     interaction: ChatInputCommandInteraction,
 ): Promise<void> {
     const id = interaction.options.getString("id", true);
     if (!interaction.guildId) return;
+
+    // 解除前にデータを取得（元メッセージ更新用）
+    const reminder = getReminderById(id);
+
     const result = cancelReminder(id, interaction.user.id, interaction.guildId);
 
     if (!result.success) {
@@ -552,7 +580,31 @@ async function handleRemove(
         return;
     }
 
+    // 元メッセージを更新（登録解除状態にする）
+    if (reminder?.replyMessageId && reminder.replyChannelId) {
+        try {
+            const channel = (await interaction.client.channels.fetch(
+                reminder.replyChannelId,
+            )) as TextChannel | null;
+
+            if (channel) {
+                const replyMessage = await channel.messages.fetch(
+                    reminder.replyMessageId,
+                );
+                if (replyMessage) {
+                    await replyMessage.edit({
+                        content: `🗑️ リマインダー \`${id}\` を解除しました。`,
+                        components: [],
+                    });
+                }
+            }
+        } catch (error) {
+            // 無視
+        }
+    }
+
     await interaction.reply({
         content: `🗑️ リマインダー \`${id}\` を解除しました。`,
+        flags: MessageFlags.Ephemeral,
     });
 }

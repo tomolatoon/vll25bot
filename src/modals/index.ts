@@ -9,9 +9,10 @@
 import type { Client, Collection, ModalSubmitInteraction } from "discord.js";
 import type { ModalHandler } from "../types";
 import { remindEditModal } from "./remind-edit";
+import { remindPageJumpModal } from "./remind-page-jump";
 
 // モーダルハンドラー一覧（新しいモーダルはここに追加）
-const modalHandlers: ModalHandler[] = [remindEditModal];
+const modalHandlers: ModalHandler[] = [remindEditModal, remindPageJumpModal];
 
 /**
  * クライアントにモーダルハンドラーを登録

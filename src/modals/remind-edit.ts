@@ -4,7 +4,11 @@
  * リマインダー編集モーダルの送信処理を担当します。
  */
 
-import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
+import {
+    MessageFlags,
+    type ModalSubmitInteraction,
+    type TextChannel,
+} from "discord.js";
 import { buildReminderButtons, buildReminderMessage } from "../commands/remind";
 import {
     buildChangesArray,
@@ -88,30 +92,31 @@ export const remindEditModal: ModalHandler = {
             remindAt: dateValidation.date,
         });
 
-        // 7. 元メッセージを更新（存在する場合）
-        if (interaction.message) {
+        // 7. 過去の登録完了メッセージを更新（存在する場合）
+        if (updated.replyMessageId && updated.replyChannelId) {
             try {
-                await interaction.message.edit({
-                    content: buildReminderMessage(updated),
-                    components: [buildReminderButtons(updated.id)],
-                });
+                const channel = (await interaction.client.channels.fetch(
+                    updated.replyChannelId,
+                )) as TextChannel | null;
+
+                if (channel) {
+                    const replyMessage = await channel.messages.fetch(
+                        updated.replyMessageId,
+                    );
+                    if (replyMessage) {
+                        await replyMessage.edit({
+                            content: buildReminderMessage(updated),
+                            components: [buildReminderButtons(updated.id)],
+                        });
+                    }
+                }
             } catch (error) {
-                // メッセージが削除されている等のエラーは無視
+                // メッセージが見つからない、権限がないなどのエラーは無視
             }
         }
 
         // 8. 返信メッセージを生成して送信
-        const responseContent = buildUpdateResponseContent(
-            updated,
-            changes,
-            interaction.message
-                ? {
-                      guildId: updated.guildId,
-                      channelId: interaction.message.channelId,
-                      messageId: interaction.message.id,
-                  }
-                : undefined,
-        );
+        const responseContent = buildUpdateResponseContent(updated, changes);
 
         await interaction.reply({
             content: responseContent,

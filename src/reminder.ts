@@ -108,7 +108,7 @@ class Reminder {
     }
 
     /** リマインダーを削除 */
-    stop(id: string): boolean {
+    cancel(id: string): boolean {
         try {
             // メモリ上のタイマーを解除
             if (this.scheduledTasks.has(id)) {
@@ -424,7 +424,7 @@ class Reminder {
     }
 
     /** 全タスクを停止（DB全削除）- 慎重に */
-    stopAll(): void {
+    cancelAll(): void {
         db.run("DELETE FROM reminders");
         // メモリもクリア
         for (const timer of this.scheduledTasks.values()) {
@@ -435,7 +435,7 @@ class Reminder {
     }
 
     /** ギルドの全タスクを停止 */
-    stopAllByGuild(guildId: string): number {
+    cancelAllByGuild(guildId: string): number {
         const targets = this.getByGuild(guildId);
 
         // メモリ上のタイマー解除
@@ -473,6 +473,8 @@ class Reminder {
             createdBy: row.createdBy,
             guildId: row.guildId,
             createdAt: new Date(row.createdAt).toISOString(),
+            replyMessageId: row.replyMessageId,
+            replyChannelId: row.replyChannelId,
         };
     }
 }
@@ -489,9 +491,9 @@ export const getReminders = () => reminder.getAll();
 export const getReminderById = reminder.findById.bind(reminder);
 export const getRemindersByGuild = reminder.getByGuild.bind(reminder);
 
-export const stopReminder = reminder.stop.bind(reminder);
-export const stopReminders = () => reminder.stopAll();
-export const stopRemindersByGuild = reminder.stopAllByGuild.bind(reminder);
+export const cancelReminderTask = reminder.cancel.bind(reminder);
+export const cancelAllReminders = () => reminder.cancelAll();
+export const cancelRemindersByGuild = reminder.cancelAllByGuild.bind(reminder);
 
 export const saveReminders = () => reminder.save();
 export const restoreReminders = () => reminder.restore();

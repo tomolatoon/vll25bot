@@ -6,15 +6,19 @@ import {
     type InteractionReplyOptions,
     MessageFlags,
 } from "discord.js";
-import { dispatchButtonInteraction, registerButtonHandlers } from "./buttons";
+import {
+    dispatchButtonInteraction,
+    dispatchSelectMenuInteraction,
+    registerButtonHandlers,
+} from "./buttons";
 import { registerCommands } from "./commands";
 import { registerForwardCleanupHandler } from "./events/forwardCleanup";
 import { dispatchModalInteraction, registerModalHandlers } from "./modals";
 import {
+    cancelAllReminders,
     restoreReminders,
     saveReminders,
     setClient,
-    stopReminders,
 } from "./reminder";
 import type { ButtonHandler, Command, ModalHandler } from "./types";
 import { logger } from "./utils/logger";
@@ -65,6 +69,12 @@ client.on("interactionCreate", async (interaction) => {
         return;
     }
 
+    // Select Menu処理（レジストリベースでディスパッチ）
+    if (interaction.isAnySelectMenu()) {
+        await dispatchSelectMenuInteraction(interaction);
+        return;
+    }
+
     // モーダル送信処理（レジストリベースでディスパッチ）
     if (interaction.isModalSubmit()) {
         await dispatchModalInteraction(interaction);
@@ -109,7 +119,7 @@ const shutdown = () => {
     logger.info("🛑 Botをシャットダウン中...");
     // リマインダーを保存してタスクを停止
     saveReminders();
-    stopReminders();
+    cancelAllReminders();
     client.destroy().then(() => {
         logger.info("👋 オフラインになりました");
         process.exit(0);

@@ -1,0 +1,319 @@
+/**
+ * remind-list.ts - リマインダー一覧表示のユーティリティ
+ *
+ * ページネーション、Select Menu、ナビゲーションボタンの生成を担当
+ */
+
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    StringSelectMenuBuilder,
+    type StringSelectMenuOptionBuilder,
+} from "discord.js";
+import type { ReminderData } from "../reminder";
+
+/** 1ページあたりの表示件数 */
+export const REMINDERS_PER_PAGE = 5;
+
+/** ソート順 */
+export type SortOrder = "asc" | "desc";
+
+/** ページネーション状態 */
+export interface ListState {
+    /** 現在のページ（0始まり） */
+    page: number;
+    /** ソート順 */
+    order: SortOrder;
+    /** フィルター: チャンネルID（省略で全チャンネル） */
+    channelId?: string;
+    /** フィルター: ユーザーID（省略で自分のみ） */
+    userId?: string;
+    /** ギルドID */
+    guildId: string;
+}
+
+/** ボタン/Select Menu のIDプレフィックス */
+export const LIST_SELECT_PREFIX = "remind_list_select";
+export const LIST_NAV_PREV_PREFIX = "remind_list_prev";
+export const LIST_NAV_NEXT_PREFIX = "remind_list_next";
+export const LIST_NAV_PAGE_PREFIX = "remind_list_page";
+export const LIST_ORDER_PREFIX = "remind_list_order";
+export const LIST_SHOW_PREFIX = "remind_list_show";
+export const LIST_EDIT_PREFIX = "remind_list_edit";
+export const LIST_CANCEL_PREFIX = "remind_list_cancel";
+
+/**
+ * 状態をカスタムIDにエンコードする
+ *
+ * @param prefix - IDプレフィックス
+ * @param state - ページネーション状態
+ * @param selectedId - 選択されたリマインダーID（オプション）
+ * @returns エンコードされたカスタムID
+ *
+ * @remarks
+ * フォーマット: `{prefix}:{page}:{order}:{selectedId}`
+ * selectedId が無い場合は省略
+ * Discord の customId は 100 文字制限があるため、guildId/userId/channelId は含めない
+ */
+export function encodeState(
+    prefix: string,
+    state: ListState,
+    selectedId?: string,
+): string {
+    if (selectedId) {
+        return `${prefix}:${state.page}:${state.order}:${selectedId}`;
+    }
+    return `${prefix}:${state.page}:${state.order}`;
+}
+
+/**
+ * カスタムIDから状態をデコードする
+ *
+ * @param customId - デコードするカスタムID
+ * @param guildId - ギルドID（interaction から取得）
+ * @param defaultUserId - デフォルトのユーザーID（interaction.user.id）
+ * @param defaultChannelId - デフォルトのチャンネルID（オプション）
+ * @returns デコードされた状態とリマインダーID
+ */
+export function decodeState(
+    customId: string,
+    guildId: string,
+    defaultUserId?: string,
+    defaultChannelId?: string,
+): {
+    prefix: string;
+    state: ListState;
+    selectedId?: string;
+} {
+    const parts = customId.split(":");
+    return {
+        prefix: parts[0],
+        state: {
+            page: Number.parseInt(parts[1], 10),
+            order: parts[2] as SortOrder,
+            channelId: defaultChannelId,
+            userId: defaultUserId,
+            guildId,
+        },
+        selectedId: parts[3],
+    };
+}
+
+/**
+ * リマインダーをフィルター・ソートする
+ *
+ * @param reminders - 全リマインダー
+ * @param state - フィルター・ソート条件
+ * @returns フィルター・ソート済みのリマインダー
+ */
+export function filterAndSortReminders(
+    reminders: ReminderData[],
+    state: ListState,
+): ReminderData[] {
+    let filtered = reminders;
+
+    // チャンネルでフィルター
+    if (state.channelId) {
+        filtered = filtered.filter((r) => r.channelId === state.channelId);
+    }
+
+    // ユーザーでフィルター
+    if (state.userId) {
+        filtered = filtered.filter((r) => r.createdBy === state.userId);
+    }
+
+    // 日時でソート
+    filtered.sort((a, b) => {
+        const dateA = new Date(a.remindAt).getTime();
+        const dateB = new Date(b.remindAt).getTime();
+        return state.order === "asc" ? dateA - dateB : dateB - dateA;
+    });
+
+    return filtered;
+}
+
+/**
+ * ページ数を計算する
+ *
+ * @param totalItems - 合計アイテム数
+ * @returns ページ数
+ */
+export function getTotalPages(totalItems: number): number {
+    return Math.max(1, Math.ceil(totalItems / REMINDERS_PER_PAGE));
+}
+
+/**
+ * 現在のページのリマインダーを取得する
+ *
+ * @param reminders - 全リマインダー（フィルター・ソート済み）
+ * @param page - ページ番号（0始まり）
+ * @returns 現在のページのリマインダー
+ */
+export function getPageItems(
+    reminders: ReminderData[],
+    page: number,
+): ReminderData[] {
+    const start = page * REMINDERS_PER_PAGE;
+    return reminders.slice(start, start + REMINDERS_PER_PAGE);
+}
+
+/**
+ * 一覧のメッセージ内容を生成する
+ *
+ * @param reminders - 表示するリマインダー
+ * @param state - ページネーション状態
+ * @param totalPages - 合計ページ数
+ * @returns フォーマットされたメッセージ
+ */
+export function buildListContent(
+    reminders: ReminderData[],
+    state: ListState,
+    totalPages: number,
+): string {
+    if (reminders.length === 0) {
+        return "📭 リマインダーはありません。";
+    }
+
+    const orderLabel = state.order === "asc" ? "⬆️ 昇順" : "⬇️ 降順";
+    const header = `📋 **リマインダー一覧** (${state.page + 1}/${totalPages}ページ) ${orderLabel}\n`;
+
+    const list = reminders
+        .map((r) => {
+            const date = new Date(r.remindAt);
+            const dateStr = date.toLocaleString("ja-JP");
+            const msgPreview =
+                r.message.length > 25
+                    ? `${r.message.substring(0, 25)}...`
+                    : r.message;
+            return `🆔 \`${r.id}\`
+📅 ${dateStr} 📢 <#${r.channelId}>
+　📝 ${msgPreview}`;
+        })
+        .join("\n\n");
+
+    return `${header}\n${list}\n\u200B`;
+}
+
+/**
+ * リマインダー選択用の Select Menu を生成する
+ *
+ * @param reminders - 表示するリマインダー
+ * @param state - ページネーション状態
+ * @returns Select Menu の ActionRow
+ */
+export function buildSelectMenu(
+    reminders: ReminderData[],
+    state: ListState,
+    selectedId?: string,
+): ActionRowBuilder<StringSelectMenuBuilder> {
+    const options = reminders.map((r) => {
+        const date = new Date(r.remindAt);
+        const dateStr = date.toLocaleString("ja-JP");
+        const msgPreview =
+            r.message.length > 20
+                ? `${r.message.substring(0, 20)}...`
+                : r.message;
+
+        return {
+            label: `${dateStr}`,
+            description: msgPreview,
+            value: r.id,
+            default: r.id === selectedId,
+        };
+    });
+
+    const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId(encodeState(LIST_SELECT_PREFIX, state))
+        .setPlaceholder("リマインダーを選択...")
+        .addOptions(options);
+
+    return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        selectMenu,
+    );
+}
+
+/**
+ * 操作ボタン（詳細/編集/削除）を生成する
+ *
+ * @param state - ページネーション状態
+ * @param selectedId - 選択されたリマインダーID（オプション）
+ * @returns ボタンの ActionRow
+ */
+export function buildActionButtons(
+    state: ListState,
+    selectedId?: string,
+): ActionRowBuilder<ButtonBuilder> {
+    const disabled = !selectedId;
+
+    const showButton = new ButtonBuilder()
+        .setCustomId(encodeState(LIST_SHOW_PREFIX, state, selectedId))
+        .setLabel("詳細")
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji("🔍")
+        .setDisabled(disabled);
+
+    const editButton = new ButtonBuilder()
+        .setCustomId(encodeState(LIST_EDIT_PREFIX, state, selectedId))
+        .setLabel("編集")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("✏️")
+        .setDisabled(disabled);
+
+    const cancelButton = new ButtonBuilder()
+        .setCustomId(encodeState(LIST_CANCEL_PREFIX, state, selectedId))
+        .setLabel("解除")
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji("🗑️")
+        .setDisabled(disabled);
+
+    return new ActionRowBuilder<ButtonBuilder>().addComponents(
+        showButton,
+        editButton,
+        cancelButton,
+    );
+}
+
+/**
+ * ナビゲーションボタン（前へ/ページ指定/次へ/順序切替）を生成する
+ *
+ * @param state - ページネーション状態
+ * @param totalPages - 合計ページ数
+ * @returns ボタンの ActionRow
+ */
+export function buildNavButtons(
+    state: ListState,
+    totalPages: number,
+): ActionRowBuilder<ButtonBuilder> {
+    const prevButton = new ButtonBuilder()
+        .setCustomId(encodeState(LIST_NAV_PREV_PREFIX, state))
+        .setLabel("前へ")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("◀")
+        .setDisabled(state.page === 0);
+
+    const pageButton = new ButtonBuilder()
+        .setCustomId(encodeState(LIST_NAV_PAGE_PREFIX, state))
+        .setLabel(`${state.page + 1}/${totalPages}`)
+        .setStyle(ButtonStyle.Secondary);
+
+    const nextButton = new ButtonBuilder()
+        .setCustomId(encodeState(LIST_NAV_NEXT_PREFIX, state))
+        .setLabel("次へ")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("▶")
+        .setDisabled(state.page >= totalPages - 1);
+
+    const orderButton = new ButtonBuilder()
+        .setCustomId(encodeState(LIST_ORDER_PREFIX, state))
+        .setLabel(state.order === "asc" ? "昇順" : "降順")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji(state.order === "asc" ? "⬆️" : "⬇️");
+
+    return new ActionRowBuilder<ButtonBuilder>().addComponents(
+        prevButton,
+        pageButton,
+        nextButton,
+        orderButton,
+    );
+}
