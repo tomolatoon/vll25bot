@@ -16,6 +16,12 @@ import {
 } from "discord.js";
 import { parseFutureDateTime } from "../lib/parser/date-parser";
 import {
+    buildChangesArray,
+    buildUpdateResponseContent,
+    validateDateTimeInput,
+    validateReminderForUpdate,
+} from "../lib/reminder";
+import {
     type ReminderData,
     createReminder,
     getReminderById,
@@ -387,60 +393,32 @@ async function handleModify(
 
     if (!interaction.guildId) return;
 
-    const reminder = getReminderById(id);
-
-    if (!reminder) {
+    // 1. バリデーション
+    const validation = validateReminderForUpdate(
+        id,
+        interaction.user.id,
+        interaction.guildId,
+    );
+    if (!validation.success) {
         await interaction.reply({
-            content: "❌ リマインダーが見つかりません。",
+            content: `❌ ${validation.error}`,
             flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
-    // 権限チェック
-    if (reminder.createdBy !== interaction.user.id) {
+    // 2. 日時のバリデーション
+    const dateValidation = validateDateTimeInput(datetimeStr);
+    if (!dateValidation.success) {
         await interaction.reply({
-            content: "❌ 自分が登録したリマインダーのみ編集できます。",
+            content: `❌ ${dateValidation.error}`,
             flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
-    // ギルドチェック
-    if (reminder.guildId !== interaction.guildId) {
-        await interaction.reply({
-            content:
-                "❌ 指定されたIDのリマインダーがこのサーバーに見つかりません。",
-            flags: MessageFlags.Ephemeral,
-        });
-        return;
-    }
-
-    // 日時のパース
-    let newRemindAt: Date | undefined;
-    if (datetimeStr) {
-        newRemindAt = parseFutureDateTime(datetimeStr) || undefined;
-        if (!newRemindAt) {
-            await interaction.reply({
-                content:
-                    "❌ 日時の形式を正しく入力してください。\n例: 2026/01/15 9:00, 明日 9:00, 1分後 など",
-                flags: MessageFlags.Ephemeral,
-            });
-            return;
-        }
-
-        // 過去の日時チェック
-        if (newRemindAt <= new Date()) {
-            await interaction.reply({
-                content: "❌ 未来の日時を指定してください。",
-                flags: MessageFlags.Ephemeral,
-            });
-            return;
-        }
-    }
-
-    // 更新項目がない場合
-    if (!newMessage && !newRemindAt && !newChannel) {
+    // 3. 更新項目の確認
+    if (!newMessage && !dateValidation.date && !newChannel) {
         await interaction.reply({
             content: "❌ 変更する項目を少なくとも1つ指定してください。",
             flags: MessageFlags.Ephemeral,
@@ -448,10 +426,10 @@ async function handleModify(
         return;
     }
 
-    // リマインダーを更新
+    // 4. リマインダーを更新
     const updated = updateReminder(id, {
         message: newMessage,
-        remindAt: newRemindAt,
+        remindAt: dateValidation.date,
         channelId: newChannel?.id,
     });
 
@@ -463,14 +441,14 @@ async function handleModify(
         return;
     }
 
-    // 変更内容を表示
-    const changes: string[] = [];
-    if (newMessage) changes.push(`📝 メッセージ: ${newMessage}`);
-    if (newRemindAt)
-        changes.push(`📅 日時: ${newRemindAt.toLocaleString("ja-JP")}`);
-    if (newChannel) changes.push(`📢 チャンネル: <#${newChannel.id}>`);
+    // 5. 変更内容を生成
+    const changes = buildChangesArray({
+        message: newMessage,
+        remindAt: dateValidation.date,
+        channel: newChannel,
+    });
 
-    // 元のリプライメッセージを更新（保存されている場合）
+    // 6. 元メッセージを更新（存在する場合）
     if (updated.replyMessageId && updated.replyChannelId) {
         try {
             const channel = await interaction.client.channels.fetch(
@@ -480,59 +458,33 @@ async function handleModify(
                 const message = await channel.messages.fetch(
                     updated.replyMessageId,
                 );
-
-                // 元メッセージを更新
                 await message.edit({
                     content: buildReminderMessage(updated),
                     components: [buildReminderButtons(updated.id)],
                 });
-
-                // メッセージリンクを生成
-                const messageLink = `https://discord.com/channels/${updated.guildId}/${updated.replyChannelId}/${updated.replyMessageId}`;
-
-                // コマンドには Ephemeral でメッセージリンク付きで返信
-                await interaction.reply({
-                    content: `✅ リマインダーを更新しました！
-
-${changes.join("\n")}
-
-🔗 [リマインダーを表示](${messageLink})`,
-                    flags: MessageFlags.Ephemeral,
-                });
             }
         } catch (error) {
             // メッセージが削除されている等のエラーは無視
-            console.error("Failed to update original message:", error);
-
-            // エラー時は通常のリプライ
-            await interaction.reply({
-                content: `✅ リマインダーを更新しました！
-
-${changes.join("\n")}
-
-🆔 ID: \`${id}\``,
-                flags: MessageFlags.Ephemeral,
-            });
         }
-    } else {
-        console.log(
-            `[DEBUG] replyMessageId or replyChannelId not found for reminder ${id}`,
-            {
-                replyMessageId: updated.replyMessageId,
-                replyChannelId: updated.replyChannelId,
-            },
-        );
-
-        // 元メッセージが見つからない場合は通常のリプライ
-        await interaction.reply({
-            content: `✅ リマインダーを更新しました！
-
-${changes.join("\n")}
-
-🆔 ID: \`${id}\``,
-            flags: MessageFlags.Ephemeral,
-        });
     }
+
+    // 7. 返信メッセージを生成して送信
+    const responseContent = buildUpdateResponseContent(
+        updated,
+        changes,
+        updated.replyMessageId && updated.replyChannelId
+            ? {
+                  guildId: updated.guildId,
+                  channelId: updated.replyChannelId,
+                  messageId: updated.replyMessageId,
+              }
+            : undefined,
+    );
+
+    await interaction.reply({
+        content: responseContent,
+        flags: MessageFlags.Ephemeral,
+    });
 }
 
 /** リマインダー解除の結果 */
