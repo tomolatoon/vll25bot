@@ -9,7 +9,9 @@ import {
     type AnySelectMenuInteraction,
     type ButtonInteraction,
     MessageFlags,
-    type TextInputBuilder,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
 } from "discord.js";
 import {
     BUTTON_ID_REMIND_CANCEL,
@@ -35,7 +37,6 @@ import {
 } from "../lib/remind-handlers";
 import {
     decodeState,
-    encodeState, // encodeState は updateListView で使ってないかもしれないが念のため残す
     filterAndSortReminders,
     getPageItems,
     getTotalPages,
@@ -184,13 +185,6 @@ export const remindListPageHandler: ButtonHandler = {
     idPrefix: LIST_NAV_PAGE_PREFIX,
 
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
-        const {
-            ModalBuilder,
-            TextInputBuilder,
-            TextInputStyle,
-            ActionRowBuilder,
-        } = await import("discord.js");
-
         const { state } = decodeState(
             interaction.customId,
             interaction.guildId ?? "",

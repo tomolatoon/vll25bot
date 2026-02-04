@@ -2,8 +2,6 @@ import {
     type ChatInputCommandInteraction,
     MessageFlags,
     SlashCommandSubcommandBuilder,
-    type TextChannel, // handleReminderCancel 等で使わないなら削除できるが、トップレベルインポートでなければエラーにならないか？
-    // handleReminderCancel 内で TextChannel を使っているので、ここでは不要になるはず。
 } from "discord.js";
 import { handleReminderCancel } from "../../lib/remind-handlers";
 
