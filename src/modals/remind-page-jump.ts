@@ -7,7 +7,7 @@
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import {
     buildActionButtons,
-    buildListContent,
+    buildListEmbed,
     buildOtherNavButtons,
     buildPaginationButtons,
     buildSelectMenu,
@@ -60,7 +60,7 @@ export const remindPageJumpModal: ModalHandler = {
         state.page = pageNumber - 1;
         const pageItems = getPageItems(filtered, state.page);
 
-        const content = buildListContent(pageItems, state, totalPages);
+        const embed = buildListEmbed(pageItems, state, totalPages);
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
         const navButtons = buildPaginationButtons(state, totalPages);
@@ -70,7 +70,8 @@ export const remindPageJumpModal: ModalHandler = {
         // interaction.message を使用して元のメッセージを更新
         if (interaction.message) {
             await interaction.message.edit({
-                content,
+                content: "", // テキストはクリア
+                embeds: [embed],
                 components: [
                     selectMenu,
                     actionButtons,

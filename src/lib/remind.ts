@@ -6,7 +6,8 @@
  * メッセージ送信ロジックは各ハンドラー（command/modal）に委譲します。
  */
 
-import type { TextChannel } from "discord.js";
+import { EmbedBuilder, type TextChannel } from "discord.js";
+import { REMIND_COLOR_SUCCESS, REMIND_COLOR_WARN } from "./remind-ui";
 import {
     type ReminderData,
     cancelReminderTask,
@@ -144,13 +145,10 @@ export function buildChangesArray(updates: {
 
 /**
  * リマインダー更新後の返信メッセージ内容を生成
- *
+ * @deprecated Embedの使用を推奨。{@link buildUpdateResponseEmbed}を使用してください。
  * @param updated 更新後のリマインダーデータ
  * @param changes 変更内容の配列
  * @returns 返信メッセージの内容
- *
- * @事前条件 updated は有効なリマインダーデータ
- * @事後条件 成功メッセージの内容を返す（メッセージリンク付き/なし）
  */
 export function buildUpdateResponseContent(
     updated: ReminderData,
@@ -171,6 +169,59 @@ ${changes.join("\n")}
 
 🔗 リマインダー登録メッセージは見つかりませんでした
 `;
+}
+
+/**
+ * リマインダー更新後の返信Embedを生成
+ *
+ * @param updated 更新後のリマインダーデータ
+ * @param changes 変更内容の配列
+ * @returns EmbedBuilder
+ */
+export function buildUpdateResponseEmbed(
+    updated: ReminderData,
+    changes: string[],
+): EmbedBuilder {
+    const embed = new EmbedBuilder()
+        .setColor(REMIND_COLOR_SUCCESS)
+        .setTitle("✏️ リマインダー更新")
+        .setDescription("リマインダーを更新しました！");
+
+    if (changes.length > 0) {
+        embed.addFields({
+            name: "変更内容",
+            value: changes.join("\n"),
+        });
+    }
+
+    if (updated.replyMessageId && updated.replyChannelId) {
+        const messageLink = `https://discord.com/channels/${updated.guildId}/${updated.replyChannelId}/${updated.replyMessageId}`;
+        embed.addFields({
+            name: "リンク",
+            value: `[リマインダーを表示](${messageLink})`,
+        });
+    } else {
+        // 元メッセージが見つからない場合
+        // 警告色にするか迷うが、更新成功は成功なのでSUCCESSのまま、
+        // フッターなどで注記する形にするか、あるいはDescriptionに追記
+        embed.setFooter({
+            text: `ID: ${updated.id} (元メッセージが見つかりませんでした)`,
+        });
+    }
+
+    // IDは確実にわかるようにフィールドに入れるか、フッターに入れる
+    // remind-uiではフィールドに入れているので合わせるのが無難だが、
+    // ここでは変更点を目立たせたいのでIDはフッターでも良いかも。
+    // しかし統一感のためにフィールドに入れておく。
+    if (!updated.replyMessageId || !updated.replyChannelId) {
+        // リンクがない場合のみIDフィールドを明示的に出す（リンクがあれば飛べばわかる）
+        // または常にIDは出しても良い
+        // remind-ui.tsでは常にIDを出している
+        // ここでも出しておこう
+    }
+    // 上記ロジックでフッターにIDを入れたので、ここではシンプルにする
+
+    return embed;
 }
 
 /** リマインダー解除の結果 */

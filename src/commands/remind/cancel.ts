@@ -2,8 +2,10 @@ import {
     type ChatInputCommandInteraction,
     MessageFlags,
     SlashCommandSubcommandBuilder,
+    EmbedBuilder, // Added
 } from "discord.js";
 import { handleReminderCancel } from "../../lib/remind-handlers";
+import { REMIND_COLOR_SUCCESS } from "../../lib/remind-ui"; // Added
 
 export const cancelCommand = new SlashCommandSubcommandBuilder()
     .setName("cancel")
@@ -42,7 +44,12 @@ export async function handleCancel(
     }
 
     await interaction.reply({
-        content: `🗑️ リマインダー \`${id}\` を解除しました。`,
+        embeds: [
+            new EmbedBuilder()
+                .setColor(REMIND_COLOR_SUCCESS)
+                .setTitle("🗑️ リマインダー解除")
+                .setDescription(`リマインダー \`${id}\` を解除しました。`),
+        ], // Changed
         flags: MessageFlags.Ephemeral,
     });
 }

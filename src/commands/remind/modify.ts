@@ -4,16 +4,17 @@ import {
     MessageFlags,
     SlashCommandSubcommandBuilder,
     type TextChannel,
+    EmbedBuilder, // Added
 } from "discord.js";
 import {
     buildChangesArray,
-    buildUpdateResponseContent,
+    buildUpdateResponseEmbed, // Changed
     validateDateTimeInput,
     validateReminderForUpdate,
 } from "../../lib/remind";
 import {
     buildReminderButtons,
-    buildReminderMessage,
+    buildReminderEmbed, // Changed
 } from "../../lib/remind-ui";
 import { updateReminder } from "../../reminder";
 
@@ -125,7 +126,8 @@ export async function handleModify(
                     updated.replyMessageId,
                 );
                 await message.edit({
-                    content: buildReminderMessage(updated),
+                    content: "", // Clear content
+                    embeds: [buildReminderEmbed(updated)], // Changed
                     components: [buildReminderButtons(updated.id)],
                 });
             }
@@ -135,10 +137,10 @@ export async function handleModify(
     }
 
     // 7. 返信メッセージを生成して送信
-    const responseContent = buildUpdateResponseContent(updated, changes);
+    const responseEmbed = buildUpdateResponseEmbed(updated, changes); // Changed
 
     await interaction.reply({
-        content: responseContent,
+        embeds: [responseEmbed], // Changed
         flags: MessageFlags.Ephemeral,
     });
 }

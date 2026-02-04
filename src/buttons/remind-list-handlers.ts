@@ -25,7 +25,7 @@ import {
     LIST_SELECT_PREFIX,
     LIST_SHOW_PREFIX,
     buildActionButtons,
-    buildListContent,
+    buildListEmbed, // Changed
     buildOtherNavButtons,
     buildPaginationButtons,
     buildSelectMenu,
@@ -77,14 +77,15 @@ async function updateListView(
         return;
     }
 
-    const content = buildListContent(pageItems, state, totalPages);
+    const embed = buildListEmbed(pageItems, state, totalPages);
     const selectMenu = buildSelectMenu(pageItems, state, selectedId);
     const actionButtons = buildActionButtons(state, selectedId);
     const navButtons = buildPaginationButtons(state, totalPages);
     const otherNavButtons = buildOtherNavButtons(state);
 
     await interaction.update({
-        content,
+        content: "",
+        embeds: [embed],
         components: [selectMenu, actionButtons, navButtons, otherNavButtons],
     });
 }
@@ -123,14 +124,15 @@ export const remindListPrevHandler: ButtonHandler = {
         const totalPages = getTotalPages(filtered.length);
         const pageItems = getPageItems(filtered, state.page);
 
-        const content = buildListContent(pageItems, state, totalPages);
+        const embed = buildListEmbed(pageItems, state, totalPages);
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
         const navButtons = buildPaginationButtons(state, totalPages);
         const otherNavButtons = buildOtherNavButtons(state);
 
         await interaction.update({
-            content,
+            content: "",
+            embeds: [embed],
             components: [
                 selectMenu,
                 actionButtons,
@@ -160,14 +162,15 @@ export const remindListNextHandler: ButtonHandler = {
         state.page = Math.min(totalPages - 1, state.page + 1);
         const pageItems = getPageItems(filtered, state.page);
 
-        const content = buildListContent(pageItems, state, totalPages);
+        const embed = buildListEmbed(pageItems, state, totalPages);
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
         const navButtons = buildPaginationButtons(state, totalPages);
         const otherNavButtons = buildOtherNavButtons(state);
 
         await interaction.update({
-            content,
+            content: "",
+            embeds: [embed],
             components: [
                 selectMenu,
                 actionButtons,
@@ -236,14 +239,15 @@ export const remindListOrderHandler: ButtonHandler = {
         const totalPages = getTotalPages(filtered.length);
         const pageItems = getPageItems(filtered, state.page);
 
-        const content = buildListContent(pageItems, state, totalPages);
+        const embed = buildListEmbed(pageItems, state, totalPages);
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
         const navButtons = buildPaginationButtons(state, totalPages);
         const otherNavButtons = buildOtherNavButtons(state);
 
         await interaction.update({
-            content,
+            content: "",
+            embeds: [embed],
             components: [
                 selectMenu,
                 actionButtons,

@@ -4,9 +4,10 @@
  * リマインダー登録時に表示される「登録解除」ボタンの処理を担当します。
  */
 
-import { type ButtonInteraction, MessageFlags } from "discord.js";
+import { type ButtonInteraction, EmbedBuilder, MessageFlags } from "discord.js";
 import { BUTTON_ID_REMIND_CANCEL } from "../commands/remind";
 import { handleReminderCancel } from "../lib/remind-handlers";
+import { REMIND_COLOR_INFO, REMIND_COLOR_SUCCESS } from "../lib/remind-ui";
 import type { ButtonHandler } from "../types";
 
 /**
@@ -31,7 +32,14 @@ export const remindCancelButton: ButtonHandler = {
             } else {
                 // not_found, already_done の場合
                 await interaction.update({
-                    content: `❓ リマインダー \`${id}\` は既に解除済みです。`,
+                    content: "",
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(REMIND_COLOR_INFO)
+                            .setDescription(
+                                `❓ リマインダー \`${id}\` は既に解除済みです。`,
+                            ),
+                    ],
                     components: [],
                 });
             }
@@ -39,7 +47,13 @@ export const remindCancelButton: ButtonHandler = {
         }
 
         await interaction.update({
-            content: `🗑️ リマインダー \`${id}\` を解除しました。`,
+            content: "",
+            embeds: [
+                new EmbedBuilder()
+                    .setColor(REMIND_COLOR_SUCCESS)
+                    .setTitle("🗑️ リマインダー解除")
+                    .setDescription(`リマインダー \`${id}\` を解除しました。`),
+            ],
             components: [],
         });
     },

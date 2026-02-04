@@ -14,12 +14,15 @@ import {
     type TextChannel,
     TextInputBuilder,
     TextInputStyle,
+    EmbedBuilder, // Added
 } from "discord.js";
 import { cancelReminder } from "./remind";
 import {
     LIST_EDIT_PREFIX,
     buildReminderButtons,
-    buildReminderMessage,
+    buildReminderEmbed,
+    REMIND_COLOR_ERROR,
+    REMIND_COLOR_INFO, // Added
 } from "./remind-ui";
 import { type ReminderData, getReminderById } from "../reminder";
 
@@ -44,11 +47,11 @@ export async function handleReminderShow(
         return;
     }
 
-    const content = buildReminderMessage(reminder);
+    const embed = buildReminderEmbed(reminder, "📅 リマインダー詳細");
     const row = buildReminderButtons(reminder.id);
 
     await interaction.reply({
-        content,
+        embeds: [embed],
         components: [row],
         flags: MessageFlags.Ephemeral,
     });
@@ -156,8 +159,17 @@ export async function handleReminderCancel(
                     );
                     if (replyMessage) {
                         try {
+                            // 削除済みEmbedを作成
+                            const deletedEmbed = new EmbedBuilder()
+                                .setColor(REMIND_COLOR_ERROR)
+                                .setTitle("🗑️ リマインダー解除")
+                                .setDescription(
+                                    `リマインダー \`${reminderId}\` は解除されました。`,
+                                );
+
                             await replyMessage.edit({
-                                content: `🗑️ リマインダー \`${reminderId}\` を解除しました。`,
+                                content: "", // テキストは空にする
+                                embeds: [deletedEmbed],
                                 components: [],
                             });
                         } catch (e) {
@@ -192,7 +204,14 @@ export async function handleReminderReload(
     if (!reminder) {
         // 削除済みの場合
         await interaction.update({
-            content: `❓ リマインダー \`${reminderId}\` は既に解除済みです。`,
+            content: "",
+            embeds: [
+                new EmbedBuilder()
+                    .setColor(REMIND_COLOR_INFO)
+                    .setDescription(
+                        `❓ リマインダー \`${reminderId}\` は既に解除済みです。`,
+                    ),
+            ],
             components: [],
         });
         return;
@@ -200,7 +219,8 @@ export async function handleReminderReload(
 
     // メッセージとボタンを最新状態で更新
     await interaction.update({
-        content: buildReminderMessage(reminder),
+        content: "", // Clear logic just in case, though update overrides
+        embeds: [buildReminderEmbed(reminder)],
         components: [buildReminderButtons(reminder.id)],
     });
 }

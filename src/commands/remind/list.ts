@@ -14,7 +14,7 @@ import {
 } from "../../lib/remind-list";
 import {
     buildActionButtons,
-    buildListContent,
+    buildListEmbed, // Changed
     buildOtherNavButtons,
     buildPaginationButtons,
     buildSelectMenu,
@@ -86,14 +86,14 @@ export async function handleList(
     }
 
     // メッセージを構築
-    const content = buildListContent(pageItems, state, totalPages);
+    const embed = buildListEmbed(pageItems, state, totalPages); // Changed
     const selectMenu = buildSelectMenu(pageItems, state);
     const actionButtons = buildActionButtons(state);
     const navButtons = buildPaginationButtons(state, totalPages);
     const otherNavButtons = buildOtherNavButtons(state);
 
     await interaction.reply({
-        content,
+        embeds: [embed], // Changed
         components: [selectMenu, actionButtons, navButtons, otherNavButtons],
         flags: MessageFlags.Ephemeral,
     });

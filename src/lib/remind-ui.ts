@@ -1,11 +1,28 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    EmbedBuilder,
+} from "discord.js";
 import type { ReminderData } from "../reminder";
 
 /** リマインダー解除ボタンのIDプレフィックス */
 export const BUTTON_ID_REMIND_CANCEL = "remind_cancel";
 
+//Embed Colors
+export const REMIND_COLOR_SUCCESS = 0x00ff00; // Green
+export const REMIND_COLOR_INFO = 0x0099ff; // Blue
+export const REMIND_COLOR_ERROR = 0xff0000; // Red
+export const REMIND_COLOR_WARN = 0xffcc00; // Yellow (or similar)
+
 /**
  * リマインダー情報のメッセージを生成
+ * @param reminder リマインダーデータ
+ * @returns フォーマットされたメッセージ
+ */
+/**
+ * リマインダー情報のメッセージを生成
+ * @deprecated プレーンテキストでのメッセージ生成は非推奨です。代わりに {@link buildReminderEmbed} を使用してください。
  * @param reminder リマインダーデータ
  * @returns フォーマットされたメッセージ
  */
@@ -18,6 +35,45 @@ export function buildReminderMessage(reminder: ReminderData): string {
 📢 **チャンネル**: <#${reminder.channelId}>
 🆔 **ID**: \`${reminder.id}\`
 `;
+}
+
+/**
+ * リマインダー情報のEmbedを生成
+ * @param reminder リマインダーデータ
+ * @param titleTitle タイトル（デフォルト: "✅ リマインダーを登録しました！"）
+ * @returns EmbedBuilder
+ */
+export function buildReminderEmbed(
+    reminder: ReminderData,
+    title = "✅ リマインダーを登録しました！",
+): EmbedBuilder {
+    const remindAt = new Date(reminder.remindAt);
+
+    return new EmbedBuilder()
+        .setColor(REMIND_COLOR_SUCCESS)
+        .setTitle(title)
+        .addFields(
+            {
+                name: "📅 日時",
+                value: remindAt.toLocaleString("ja-JP"),
+                inline: true,
+            },
+            {
+                name: "📢 チャンネル",
+                value: `<#${reminder.channelId}>`,
+                inline: true,
+            },
+            {
+                name: "📝 メッセージ",
+                value: reminder.message,
+                inline: false,
+            },
+            {
+                name: "🆔 ID",
+                value: `\`${reminder.id}\``,
+                inline: false,
+            },
+        );
 }
 
 /**
@@ -83,6 +139,15 @@ export const LIST_RELOAD_PREFIX = "remind_list_reload";
  * @param totalPages - 合計ページ数
  * @returns フォーマットされたメッセージ
  */
+/**
+ * 一覧のメッセージ内容を生成する
+ *
+ * @deprecated プレーンテキストでの一覧生成は非推奨です。代わりに {@link buildListEmbed} を使用してください。
+ * @param reminders - 表示するリマインダー
+ * @param state - ページネーション状態
+ * @param totalPages - 合計ページ数
+ * @returns フォーマットされたメッセージ
+ */
 export function buildListContent(
     reminders: ReminderData[],
     state: ListState,
@@ -110,6 +175,54 @@ export function buildListContent(
         .join("\n\n");
 
     return `${header}\n${list}\n\u200B`;
+}
+
+/**
+ * 一覧のEmbedを生成する
+ *
+ * @param reminders - 表示するリマインダー
+ * @param state - ページネーション状態
+ * @param totalPages - 合計ページ数
+ * @returns EmbedBuilder
+ */
+export function buildListEmbed(
+    reminders: ReminderData[],
+    state: ListState,
+    totalPages: number,
+): EmbedBuilder {
+    const orderLabel = state.order === "asc" ? "⬆️ 昇順" : "⬇️ 降順";
+
+    if (reminders.length === 0) {
+        return new EmbedBuilder()
+            .setColor(REMIND_COLOR_INFO)
+            .setTitle(`📋 リマインダー一覧 (${state.page + 1}/${totalPages})`)
+            .setDescription("📭 リマインダーはありません。");
+    }
+
+    const embed = new EmbedBuilder()
+        .setColor(REMIND_COLOR_INFO)
+        .setTitle(`📋 リマインダー一覧 (${state.page + 1}/${totalPages})`)
+        .setDescription(`ソート順: ${orderLabel}`);
+
+    for (const r of reminders) {
+        const date = new Date(r.remindAt);
+        const dateStr = date.toLocaleString("ja-JP");
+        // メッセージプレビューはEmbedのフィールド値制限(1024文字)内なら全部出してもいいが、
+        // 一覧性のためある程度で切るか、全文出すかはバランス次第。
+        // ここでは従来のリスト形式を踏襲し、やや短めにしつつフォーマットを整える。
+        const msgPreview =
+            r.message.length > 50
+                ? `${r.message.substring(0, 50)}...`
+                : r.message;
+
+        embed.addFields({
+            name: `🆔 ${r.id}`,
+            value: `📅 ${dateStr} 📢 <#${r.channelId}>\n📝 ${msgPreview}`,
+            inline: false,
+        });
+    }
+
+    return embed;
 }
 
 /**

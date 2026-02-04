@@ -8,7 +8,7 @@ import {
 import { parseFutureDateTime } from "../../lib/parser/date-parser";
 import {
     buildReminderButtons,
-    buildReminderMessage,
+    buildReminderEmbed, // Changed
 } from "../../lib/remind-ui";
 import { createReminder, updateReminder } from "../../reminder";
 
@@ -96,7 +96,7 @@ export async function handleAdd(
     const row = buildReminderButtons(reminder.id);
 
     await interaction.reply({
-        content: buildReminderMessage(reminder),
+        embeds: [buildReminderEmbed(reminder)], // Changed
         components: [row],
     });
 

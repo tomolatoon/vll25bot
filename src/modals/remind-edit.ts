@@ -9,13 +9,13 @@ import {
     type ModalSubmitInteraction,
     type TextChannel,
 } from "discord.js";
-import { buildReminderButtons, buildReminderMessage } from "../lib/remind-ui";
 import {
     buildChangesArray,
-    buildUpdateResponseContent,
+    buildUpdateResponseEmbed,
     validateDateTimeInput,
     validateReminderForUpdate,
 } from "../lib/remind";
+import { buildReminderButtons, buildReminderEmbed } from "../lib/remind-ui"; // Changed
 import { updateReminder } from "../reminder";
 import type { ModalHandler } from "../types";
 
@@ -105,7 +105,8 @@ export const remindEditModal: ModalHandler = {
                     );
                     if (replyMessage) {
                         await replyMessage.edit({
-                            content: buildReminderMessage(updated),
+                            content: "", // Clear content
+                            embeds: [buildReminderEmbed(updated)], // Changed
                             components: [buildReminderButtons(updated.id)],
                         });
                     }
@@ -116,10 +117,10 @@ export const remindEditModal: ModalHandler = {
         }
 
         // 8. 返信メッセージを生成して送信
-        const responseContent = buildUpdateResponseContent(updated, changes);
+        const responseEmbed = buildUpdateResponseEmbed(updated, changes); // Changed
 
         await interaction.reply({
-            content: responseContent,
+            embeds: [responseEmbed], // Changed
             flags: MessageFlags.Ephemeral,
         });
     },
