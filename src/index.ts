@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { dispatchButtonInteraction, registerButtonHandlers } from "./buttons";
 import { registerCommands } from "./commands";
+import { registerForwardCleanupHandler } from "./events/forwardCleanup";
 import { dispatchModalInteraction, registerModalHandlers } from "./modals";
 import {
     restoreReminders,
@@ -32,6 +33,7 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.MessageContent,
     ],
 });
@@ -43,6 +45,7 @@ client.modalHandlers = new Collection();
 registerCommands(client);
 registerButtonHandlers(client);
 registerModalHandlers(client);
+registerForwardCleanupHandler(client);
 
 // Bot起動時（v15対応: ready → clientReady）
 client.once("clientReady", () => {
@@ -93,7 +96,7 @@ client.on("interactionCreate", async (interaction) => {
             }
         } catch (e) {
             // Unknown interaction などで返信できない場合はログに出して無視
-            logger.error("エラーメッセージの送信に失敗しました:", e);
+            logger.error("エラーメッセージの送信に失敗しました:\n", e);
         }
     }
 });

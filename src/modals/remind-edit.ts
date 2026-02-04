@@ -76,7 +76,7 @@ export const remindEditModal: ModalHandler = {
 
         if (!updated) {
             await interaction.reply({
-                content: "❌ リマインダーの更新に失敗しました。",
+                content: "❌ リマインダーの更新に失敗しました。\n",
                 flags: MessageFlags.Ephemeral,
             });
             return;

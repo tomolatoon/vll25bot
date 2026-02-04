@@ -66,5 +66,5 @@ try {
 
     console.log("\n💡 コマンドを再登録するには: bun run deploy");
 } catch (error) {
-    console.error("❌ 削除に失敗しました:", error);
+    console.error("❌ 削除に失敗しました:\n", error);
 }

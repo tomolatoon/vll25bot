@@ -265,7 +265,7 @@ async function handleAdd(
 
     if (!reminder) {
         await interaction.reply({
-            content: "❌ リマインダーの登録に失敗しました。",
+            content: "❌ リマインダーの登録に失敗しました。\n",
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -435,7 +435,7 @@ async function handleModify(
 
     if (!updated) {
         await interaction.reply({
-            content: "❌ リマインダーの更新に失敗しました。",
+            content: "❌ リマインダーの更新に失敗しました。\n",
             flags: MessageFlags.Ephemeral,
         });
         return;

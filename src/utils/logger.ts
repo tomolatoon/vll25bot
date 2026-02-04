@@ -58,7 +58,7 @@ class Logger {
     private writeToFile(message: string) {
         fs.appendFile(this.logFilePath, `${message}\n`, (err) => {
             if (err) {
-                console.error("ログファイルへの書き込みに失敗しました:", err);
+                console.error("ログファイルへの書き込みに失敗しました:\n", err);
             }
         });
     }
