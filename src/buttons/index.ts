@@ -25,6 +25,7 @@ import {
     remindListPrevHandler,
     remindListSelectHandler,
     remindListShowHandler,
+    remindListReloadHandler,
 } from "./remind-list-handlers";
 import { remindReloadButton } from "./remind-reload";
 
@@ -42,6 +43,7 @@ const buttonHandlers: ButtonHandler[] = [
     remindListShowHandler,
     remindListEditHandler,
     remindListCancelHandler,
+    remindListReloadHandler,
 ];
 
 // Select Menuハンドラー一覧

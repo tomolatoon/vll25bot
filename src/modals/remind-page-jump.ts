@@ -8,7 +8,8 @@ import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import {
     buildActionButtons,
     buildListContent,
-    buildNavButtons,
+    buildOtherNavButtons,
+    buildPaginationButtons,
     buildSelectMenu,
     decodeState,
     filterAndSortReminders,
@@ -60,12 +61,13 @@ export const remindPageJumpModal: ModalHandler = {
         const content = buildListContent(pageItems, state, totalPages);
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
-        const navButtons = buildNavButtons(state, totalPages);
+        const navButtons = buildPaginationButtons(state, totalPages);
+        const otherNavButtons = buildOtherNavButtons(state);
 
         // リストを更新
         await (interaction as any).update({
             content,
-            components: [selectMenu, actionButtons, navButtons],
+            components: [selectMenu, actionButtons, navButtons, otherNavButtons],
         });
     },
 };

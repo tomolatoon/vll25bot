@@ -19,11 +19,13 @@ import {
     LIST_NAV_PAGE_PREFIX,
     LIST_NAV_PREV_PREFIX,
     LIST_ORDER_PREFIX,
+    LIST_RELOAD_PREFIX,
     LIST_SELECT_PREFIX,
     LIST_SHOW_PREFIX,
     buildActionButtons,
     buildListContent,
-    buildNavButtons,
+    buildPaginationButtons,
+    buildOtherNavButtons,
     buildSelectMenu,
     decodeState,
     encodeState,
@@ -70,11 +72,12 @@ async function updateListView(
     const content = buildListContent(pageItems, state, totalPages);
     const selectMenu = buildSelectMenu(pageItems, state, selectedId);
     const actionButtons = buildActionButtons(state, selectedId);
-    const navButtons = buildNavButtons(state, totalPages);
+    const navButtons = buildPaginationButtons(state, totalPages);
+    const otherNavButtons = buildOtherNavButtons(state);
 
     await interaction.update({
         content,
-        components: [selectMenu, actionButtons, navButtons],
+        components: [selectMenu, actionButtons, navButtons, otherNavButtons],
     });
 }
 
@@ -115,7 +118,7 @@ export const remindListPrevHandler: ButtonHandler = {
         const content = buildListContent(pageItems, state, totalPages);
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
-        const navButtons = buildNavButtons(state, totalPages);
+        const navButtons = buildPaginationButtons(state, totalPages);
 
         await interaction.update({
             content,
@@ -146,7 +149,7 @@ export const remindListNextHandler: ButtonHandler = {
         const content = buildListContent(pageItems, state, totalPages);
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
-        const navButtons = buildNavButtons(state, totalPages);
+        const navButtons = buildPaginationButtons(state, totalPages);
 
         await interaction.update({
             content,
@@ -221,7 +224,7 @@ export const remindListOrderHandler: ButtonHandler = {
         const content = buildListContent(pageItems, state, totalPages);
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
-        const navButtons = buildNavButtons(state, totalPages);
+        const navButtons = buildPaginationButtons(state, totalPages);
 
         await interaction.update({
             content,
@@ -423,5 +426,22 @@ export const remindListCancelHandler: ButtonHandler = {
             content: `🗑️ リマインダー \`${selectedId}\` を解除しました。`,
             flags: MessageFlags.Ephemeral,
         });
+    },
+};
+
+/**
+ * 更新ボタンハンドラー
+ */
+export const remindListReloadHandler: ButtonHandler = {
+    idPrefix: LIST_RELOAD_PREFIX,
+
+    async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
+        const { selectedId } = decodeState(
+            interaction.customId,
+            interaction.guildId!,
+            interaction.user.id,
+        );
+        await updateListView(interaction, interaction.customId, selectedId);
+        // Ephemeralメッセージは更新ボタン押しても特に出さない（画面が更新されるだけでわかる）
     },
 };

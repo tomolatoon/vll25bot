@@ -20,7 +20,8 @@ import {
     type SortOrder,
     buildActionButtons,
     buildListContent,
-    buildNavButtons,
+    buildOtherNavButtons,
+    buildPaginationButtons,
     buildSelectMenu,
     filterAndSortReminders,
     getPageItems,
@@ -355,11 +356,12 @@ async function handleList(
     const content = buildListContent(pageItems, state, totalPages);
     const selectMenu = buildSelectMenu(pageItems, state);
     const actionButtons = buildActionButtons(state);
-    const navButtons = buildNavButtons(state, totalPages);
+    const navButtons = buildPaginationButtons(state, totalPages);
+    const otherNavButtons = buildOtherNavButtons(state);
 
     await interaction.reply({
         content,
-        components: [selectMenu, actionButtons, navButtons],
+        components: [selectMenu, actionButtons, navButtons, otherNavButtons],
         flags: MessageFlags.Ephemeral,
     });
 }

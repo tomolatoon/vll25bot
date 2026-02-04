@@ -9,7 +9,6 @@ import {
     ButtonBuilder,
     ButtonStyle,
     StringSelectMenuBuilder,
-    type StringSelectMenuOptionBuilder,
 } from "discord.js";
 import type { ReminderData } from "../reminder";
 
@@ -42,6 +41,7 @@ export const LIST_ORDER_PREFIX = "remind_list_order";
 export const LIST_SHOW_PREFIX = "remind_list_show";
 export const LIST_EDIT_PREFIX = "remind_list_edit";
 export const LIST_CANCEL_PREFIX = "remind_list_cancel";
+export const LIST_RELOAD_PREFIX = "remind_list_reload";
 
 /**
  * 状態をカスタムIDにエンコードする
@@ -281,7 +281,7 @@ export function buildActionButtons(
  * @param totalPages - 合計ページ数
  * @returns ボタンの ActionRow
  */
-export function buildNavButtons(
+export function buildPaginationButtons(
     state: ListState,
     totalPages: number,
 ): ActionRowBuilder<ButtonBuilder> {
@@ -304,6 +304,22 @@ export function buildNavButtons(
         .setEmoji("▶")
         .setDisabled(state.page >= totalPages - 1);
 
+    return new ActionRowBuilder<ButtonBuilder>().addComponents(
+        prevButton,
+        pageButton,
+        nextButton,
+    );
+}
+
+export function buildOtherNavButtons(
+    state: ListState,
+): ActionRowBuilder<ButtonBuilder> {
+    const reloadButton = new ButtonBuilder()
+        .setCustomId(encodeState(LIST_RELOAD_PREFIX, state))
+        .setLabel("更新")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("🔄");
+
     const orderButton = new ButtonBuilder()
         .setCustomId(encodeState(LIST_ORDER_PREFIX, state))
         .setLabel(state.order === "asc" ? "昇順" : "降順")
@@ -311,9 +327,7 @@ export function buildNavButtons(
         .setEmoji(state.order === "asc" ? "⬆️" : "⬇️");
 
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
-        prevButton,
-        pageButton,
-        nextButton,
         orderButton,
+        reloadButton,
     );
 }
