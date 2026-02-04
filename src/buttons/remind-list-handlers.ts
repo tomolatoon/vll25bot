@@ -5,10 +5,12 @@
  */
 
 import {
+    ActionRowBuilder,
     type AnySelectMenuInteraction,
     type ButtonInteraction,
     MessageFlags,
     type TextChannel,
+    type TextInputBuilder,
 } from "discord.js";
 import { BUTTON_ID_REMIND_CANCEL, cancelReminder } from "../commands/remind";
 import { buildReminderButtons } from "../commands/remind";
@@ -24,8 +26,8 @@ import {
     LIST_SHOW_PREFIX,
     buildActionButtons,
     buildListContent,
-    buildPaginationButtons,
     buildOtherNavButtons,
+    buildPaginationButtons,
     buildSelectMenu,
     decodeState,
     encodeState,
@@ -46,7 +48,7 @@ async function updateListView(
 ): Promise<void> {
     const { state } = decodeState(
         customId,
-        interaction.guildId!,
+        interaction.guildId ?? "",
         interaction.user.id,
     );
 
@@ -105,7 +107,7 @@ export const remindListPrevHandler: ButtonHandler = {
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
         const { state } = decodeState(
             interaction.customId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
         state.page = Math.max(0, state.page - 1);
@@ -136,7 +138,7 @@ export const remindListNextHandler: ButtonHandler = {
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
         const { state } = decodeState(
             interaction.customId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
         const allReminders = getRemindersByGuild(state.guildId);
@@ -174,7 +176,7 @@ export const remindListPageHandler: ButtonHandler = {
 
         const { state } = decodeState(
             interaction.customId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
         const allReminders = getRemindersByGuild(state.guildId);
@@ -194,7 +196,8 @@ export const remindListPageHandler: ButtonHandler = {
             .setMinLength(1)
             .setMaxLength(3);
 
-        const row = new ActionRowBuilder().addComponents(pageInput) as any;
+        const row =
+            new ActionRowBuilder<TextInputBuilder>().addComponents(pageInput);
         modal.addComponents(row);
 
         await interaction.showModal(modal);
@@ -210,7 +213,7 @@ export const remindListOrderHandler: ButtonHandler = {
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
         const { state } = decodeState(
             interaction.customId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
         state.order = state.order === "asc" ? "desc" : "asc";
@@ -242,7 +245,7 @@ export const remindListShowHandler: ButtonHandler = {
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
         const { selectedId } = decodeState(
             interaction.customId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
 
@@ -297,7 +300,7 @@ export const remindListEditHandler: ButtonHandler = {
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
         const { selectedId } = decodeState(
             interaction.customId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
 
@@ -345,8 +348,8 @@ export const remindListEditHandler: ButtonHandler = {
             .setRequired(false);
 
         modal.addComponents(
-            new ActionRowBuilder().addComponents(messageInput) as any,
-            new ActionRowBuilder().addComponents(datetimeInput) as any,
+            new ActionRowBuilder<TextInputBuilder>().addComponents(messageInput),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(datetimeInput),
         );
 
         await interaction.showModal(modal);
@@ -362,7 +365,7 @@ export const remindListCancelHandler: ButtonHandler = {
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
         const { state, selectedId } = decodeState(
             interaction.customId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
 
@@ -438,7 +441,7 @@ export const remindListReloadHandler: ButtonHandler = {
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
         const { selectedId } = decodeState(
             interaction.customId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
         await updateListView(interaction, interaction.customId, selectedId);

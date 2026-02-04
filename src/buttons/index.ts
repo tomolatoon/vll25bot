@@ -23,9 +23,9 @@ import {
     remindListOrderHandler,
     remindListPageHandler,
     remindListPrevHandler,
+    remindListReloadHandler,
     remindListSelectHandler,
     remindListShowHandler,
-    remindListReloadHandler,
 } from "./remind-list-handlers";
 import { remindReloadButton } from "./remind-reload";
 
@@ -58,15 +58,9 @@ export function registerButtonHandlers(client: Client): void {
         client.buttonHandlers.set(handler.idPrefix, handler);
     }
 
-    // Select Menuハンドラーも登録（同じコレクションを使用）
-    if (!(client as any).selectMenuHandlers) {
-        (client as any).selectMenuHandlers = new Collection<
-            string,
-            SelectMenuHandler
-        >();
-    }
+    // Select Menuハンドラーも登録
     for (const handler of selectMenuHandlers) {
-        (client as any).selectMenuHandlers.set(handler.idPrefix, handler);
+        client.selectMenuHandlers.set(handler.idPrefix, handler);
     }
 }
 
@@ -103,7 +97,7 @@ export async function dispatchSelectMenuInteraction(
     interaction: AnySelectMenuInteraction,
 ): Promise<boolean> {
     const [action, id] = interaction.customId.split(":");
-    const handler = (interaction.client as any).selectMenuHandlers?.get(action);
+    const handler = interaction.client.selectMenuHandlers?.get(action);
 
     if (handler && id) {
         await handler.execute(interaction, id);

@@ -20,7 +20,7 @@ import {
     saveReminders,
     setClient,
 } from "./reminder";
-import type { ButtonHandler, Command, ModalHandler } from "./types";
+import type { ButtonHandler, Command, ModalHandler, SelectMenuHandler } from "./types";
 import { logger } from "./utils/logger";
 
 // discord.js の Client 型を拡張
@@ -29,6 +29,7 @@ declare module "discord.js" {
         commands: Collection<string, Command>;
         buttonHandlers: Collection<string, ButtonHandler>;
         modalHandlers: Collection<string, ModalHandler>;
+        selectMenuHandlers: Collection<string, SelectMenuHandler>;
     }
 }
 
@@ -46,6 +47,7 @@ const client = new Client({
 client.commands = new Collection();
 client.buttonHandlers = new Collection();
 client.modalHandlers = new Collection();
+client.selectMenuHandlers = new Collection();
 registerCommands(client);
 registerButtonHandlers(client);
 registerModalHandlers(client);

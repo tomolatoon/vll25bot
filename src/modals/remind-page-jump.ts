@@ -33,7 +33,7 @@ export const remindPageJumpModal: ModalHandler = {
         // 元のカスタムIDから状態を復元
         const { state } = decodeState(
             originalCustomId,
-            interaction.guildId!,
+            interaction.guildId ?? "",
             interaction.user.id,
         );
 
@@ -65,9 +65,25 @@ export const remindPageJumpModal: ModalHandler = {
         const otherNavButtons = buildOtherNavButtons(state);
 
         // リストを更新
-        await (interaction as any).update({
-            content,
-            components: [selectMenu, actionButtons, navButtons, otherNavButtons],
-        });
+        // interaction.message を使用して元のメッセージを更新
+        if (interaction.message) {
+            await interaction.message.edit({
+                content,
+                components: [
+                    selectMenu,
+                    actionButtons,
+                    navButtons,
+                    otherNavButtons,
+                ],
+            });
+            // モーダル送信を確認（応答が必要）
+            await interaction.deferUpdate();
+        } else {
+            // フォールバック: messageがない場合はエラーを返す
+            await interaction.reply({
+                content: "❌ リストの更新に失敗しました。",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
     },
 };

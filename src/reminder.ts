@@ -29,13 +29,13 @@ class Reminder {
     private scheduledTasks = new Map<string, ReturnType<typeof setTimeout>>();
 
     constructor() {
-        // 1分ごとにチェック (プリフェッチ)
-        this.startScheduler();
+        // コンストラクタでの自動開始は廃止 (setClientで開始する)
     }
 
     setClient(client: Client): void {
         this.client = client;
-        // クライアント設定時に既存のスケジュール済みタスクがあれば実行可能状態にする(現状はexecuteでチェックしているので不要だが明示的にリロードしても良い)
+        // クライアント設定時にスケジュールを開始
+        this.startScheduler();
     }
 
     /** ポーリング開始 */
