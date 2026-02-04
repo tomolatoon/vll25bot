@@ -10,7 +10,10 @@ import { handleModify, modifyCommand } from "./modify";
 import { handleShow, showCommand } from "./show";
 
 export { BUTTON_ID_REMIND_CANCEL } from "../../lib/remind-ui";
-export { buildReminderButtons, buildReminderMessage } from "../../lib/remind-ui";
+export {
+    buildReminderButtons,
+    buildReminderMessage,
+} from "../../lib/remind-ui";
 export { cancelReminder } from "../../lib/remind";
 
 export const remind: Command = {

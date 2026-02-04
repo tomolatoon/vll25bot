@@ -26,8 +26,6 @@ export interface ListState {
     guildId: string;
 }
 
-
-
 /**
  * 状態をカスタムIDにエンコードする
  *
@@ -142,5 +140,3 @@ export function getPageItems(
     const start = page * REMINDERS_PER_PAGE;
     return reminders.slice(start, start + REMINDERS_PER_PAGE);
 }
-
-

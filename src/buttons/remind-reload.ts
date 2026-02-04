@@ -5,14 +5,7 @@
  */
 
 import type { ButtonInteraction } from "discord.js";
-import {
-    buildUpdateResponseContent,
-} from "../lib/remind";
-import {
-    buildReminderButtons,
-    buildReminderMessage,
-} from "../lib/remind-ui";
-import { getReminderById } from "../reminder";
+import { handleReminderReload } from "../lib/remind-handlers";
 import type { ButtonHandler } from "../types";
 
 /** リマインダー更新ボタンのIDプレフィックス */
@@ -29,21 +22,6 @@ export const remindReloadButton: ButtonHandler = {
     idPrefix: BUTTON_ID_REMIND_RELOAD,
 
     async execute(interaction: ButtonInteraction, id: string): Promise<void> {
-        const reminder = getReminderById(id);
-
-        if (!reminder) {
-            // 削除済みの場合
-            await interaction.update({
-                content: `❓ リマインダー \`${id}\` は既に解除済みです。`,
-                components: [],
-            });
-            return;
-        }
-
-        // メッセージとボタンを最新状態で更新
-        await interaction.update({
-            content: buildReminderMessage(reminder),
-            components: [buildReminderButtons(reminder.id)],
-        });
+        await handleReminderReload(interaction, id);
     },
 };

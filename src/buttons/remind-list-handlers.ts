@@ -9,7 +9,6 @@ import {
     type AnySelectMenuInteraction,
     type ButtonInteraction,
     MessageFlags,
-    type TextChannel,
     type TextInputBuilder,
 } from "discord.js";
 import {
@@ -27,18 +26,21 @@ import {
     buildListContent,
     buildOtherNavButtons,
     buildPaginationButtons,
-    buildReminderButtons,
     buildSelectMenu,
 } from "../lib/remind-ui";
-import { cancelReminder } from "../lib/remind";
+import {
+    handleReminderCancel,
+    handleReminderEdit,
+    handleReminderShow,
+} from "../lib/remind-handlers";
 import {
     decodeState,
-    encodeState,
+    encodeState, // encodeState は updateListView で使ってないかもしれないが念のため残す
     filterAndSortReminders,
     getPageItems,
     getTotalPages,
 } from "../lib/remind-list";
-import { getReminderById, getRemindersByGuild } from "../reminder";
+import { getRemindersByGuild } from "../reminder"; // getReminderById は使わなくなるはず（共通ハンドラーがやるから）
 import type { ButtonHandler, SelectMenuHandler } from "../types";
 
 /**
@@ -128,7 +130,12 @@ export const remindListPrevHandler: ButtonHandler = {
 
         await interaction.update({
             content,
-            components: [selectMenu, actionButtons, navButtons, otherNavButtons],
+            components: [
+                selectMenu,
+                actionButtons,
+                navButtons,
+                otherNavButtons,
+            ],
         });
     },
 };
@@ -160,7 +167,12 @@ export const remindListNextHandler: ButtonHandler = {
 
         await interaction.update({
             content,
-            components: [selectMenu, actionButtons, navButtons, otherNavButtons],
+            components: [
+                selectMenu,
+                actionButtons,
+                navButtons,
+                otherNavButtons,
+            ],
         });
     },
 };
@@ -201,8 +213,9 @@ export const remindListPageHandler: ButtonHandler = {
             .setMinLength(1)
             .setMaxLength(3);
 
-        const row =
-            new ActionRowBuilder<TextInputBuilder>().addComponents(pageInput);
+        const row = new ActionRowBuilder<TextInputBuilder>().addComponents(
+            pageInput,
+        );
         modal.addComponents(row);
 
         await interaction.showModal(modal);
@@ -237,7 +250,12 @@ export const remindListOrderHandler: ButtonHandler = {
 
         await interaction.update({
             content,
-            components: [selectMenu, actionButtons, navButtons, otherNavButtons],
+            components: [
+                selectMenu,
+                actionButtons,
+                navButtons,
+                otherNavButtons,
+            ],
         });
     },
 };
@@ -263,37 +281,7 @@ export const remindListShowHandler: ButtonHandler = {
             return;
         }
 
-        const reminder = getReminderById(selectedId);
-        if (!reminder) {
-            await interaction.reply({
-                content: `❌ リマインダー \`${selectedId}\` が見つかりません。`,
-                flags: MessageFlags.Ephemeral,
-            });
-            return;
-        }
-
-        const remindAt = new Date(reminder.remindAt);
-        const createdAt = reminder.createdAt
-            ? new Date(reminder.createdAt).toLocaleString("ja-JP")
-            : "不明";
-
-        const content = `🔍 **リマインダー詳細**
-
-🆔 **ID**: \`${reminder.id}\`
-📅 **日時**: ${remindAt.toLocaleString("ja-JP")}
-📢 **チャンネル**: <#${reminder.channelId}>
-👤 **作成者**: <@${reminder.createdBy}>
-📆 **作成日時**: ${createdAt}
-📝 **メッセージ**:
-${reminder.message}`;
-
-        const row = buildReminderButtons(reminder.id);
-
-        await interaction.reply({
-            content,
-            components: [row],
-            flags: MessageFlags.Ephemeral,
-        });
+        await handleReminderShow(interaction, selectedId);
     },
 };
 
@@ -318,47 +306,7 @@ export const remindListEditHandler: ButtonHandler = {
             return;
         }
 
-        const reminder = getReminderById(selectedId);
-        if (!reminder) {
-            await interaction.reply({
-                content: `❌ リマインダー \`${selectedId}\` が見つかりません。`,
-                flags: MessageFlags.Ephemeral,
-            });
-            return;
-        }
-
-        // 編集モーダルを表示（既存の remind-edit ボタンと同じ処理）
-        const {
-            ModalBuilder,
-            TextInputBuilder,
-            TextInputStyle,
-            ActionRowBuilder,
-        } = await import("discord.js");
-
-        const modal = new ModalBuilder()
-            .setCustomId(`remind_edit_modal:${selectedId}`)
-            .setTitle("リマインダー編集");
-
-        const messageInput = new TextInputBuilder()
-            .setCustomId("message")
-            .setLabel("メッセージ")
-            .setStyle(TextInputStyle.Paragraph)
-            .setValue(reminder.message)
-            .setRequired(false);
-
-        const datetimeInput = new TextInputBuilder()
-            .setCustomId("datetime")
-            .setLabel("日時 (例: 2026/01/15 9:00, 明日 9:00)")
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder("変更しない場合は空欄")
-            .setRequired(false);
-
-        modal.addComponents(
-            new ActionRowBuilder<TextInputBuilder>().addComponents(messageInput),
-            new ActionRowBuilder<TextInputBuilder>().addComponents(datetimeInput),
-        );
-
-        await interaction.showModal(modal);
+        await handleReminderEdit(interaction, selectedId);
     },
 };
 
@@ -369,7 +317,7 @@ export const remindListCancelHandler: ButtonHandler = {
     idPrefix: LIST_CANCEL_PREFIX,
 
     async execute(interaction: ButtonInteraction, _id: string): Promise<void> {
-        const { state, selectedId } = decodeState(
+        const { selectedId } = decodeState(
             interaction.customId,
             interaction.guildId ?? "",
             interaction.user.id,
@@ -383,48 +331,21 @@ export const remindListCancelHandler: ButtonHandler = {
             return;
         }
 
-        // 削除前にデータを取得（元メッセージ更新用）
-        const reminder = getReminderById(selectedId);
-        // 存在しない場合は cancelReminder でエラーになるのでここではチェックだけしてスルーでもいいが、
-        // メッセージ更新のために必要
-
-        const result = cancelReminder(selectedId, interaction.user.id);
+        const result = await handleReminderCancel(interaction, selectedId);
 
         if (!result.success) {
-            const errorMessages = {
+            const errorMessages: Record<string, string> = {
                 not_found: "リマインダーが見つかりません。",
                 wrong_guild: "このサーバーのリマインダーではありません。",
                 not_owner: "自分が登録したリマインダーのみ解除できます。",
                 already_done: "既に実行済みか解除済みです。",
             };
+            const reason = result.reason ?? "unknown"; // Default value for safety
             await interaction.reply({
-                content: `❌ ${errorMessages[result.reason]}`,
+                content: `❌ ${errorMessages[reason] ?? "エラーが発生しました。"}`,
                 flags: MessageFlags.Ephemeral,
             });
             return;
-        }
-
-        // 元メッセージを更新（登録解除状態にする）
-        if (reminder?.replyMessageId && reminder.replyChannelId) {
-            try {
-                const channel = (await interaction.client.channels.fetch(
-                    reminder.replyChannelId,
-                )) as TextChannel | null;
-
-                if (channel) {
-                    const replyMessage = await channel.messages.fetch(
-                        reminder.replyMessageId,
-                    );
-                    if (replyMessage) {
-                        await replyMessage.edit({
-                            content: `🗑️ リマインダー \`${selectedId}\` を解除しました。`,
-                            components: [],
-                        });
-                    }
-                }
-            } catch (error) {
-                // 無視
-            }
         }
 
         // 削除後にリストを更新（選択状態は解除）

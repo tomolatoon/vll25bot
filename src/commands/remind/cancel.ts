@@ -2,10 +2,10 @@ import {
     type ChatInputCommandInteraction,
     MessageFlags,
     SlashCommandSubcommandBuilder,
-    type TextChannel,
+    type TextChannel, // handleReminderCancel 等で使わないなら削除できるが、トップレベルインポートでなければエラーにならないか？
+    // handleReminderCancel 内で TextChannel を使っているので、ここでは不要になるはず。
 } from "discord.js";
-import { cancelReminder } from "../../lib/remind";
-import { getReminderById } from "../../reminder";
+import { handleReminderCancel } from "../../lib/remind-handlers";
 
 export const cancelCommand = new SlashCommandSubcommandBuilder()
     .setName("cancel")
@@ -24,48 +24,23 @@ export async function handleCancel(
     const id = interaction.options.getString("id", true);
     if (!interaction.guildId) return;
 
-    // 解除前にデータを取得（元メッセージ更新用）
-    const reminder = getReminderById(id);
-
-    const result = cancelReminder(id, interaction.user.id, interaction.guildId);
+    // handleReminderCancel は削除と元メッセージ更新を行う
+    const result = await handleReminderCancel(interaction, id);
 
     if (!result.success) {
-        const errorMessages = {
-            not_found:
-                "指定されたIDのリマインダーがこのサーバーに見つかりません。",
-            wrong_guild:
-                "指定されたIDのリマインダーがこのサーバーに見つかりません。",
-            not_owner: "自分が登録したリマインダーのみ解除できます。",
-            already_done: "既に実行済みか解除済みです。",
-        };
-        await interaction.reply({
-            content: `❌ ${errorMessages[result.reason]}`,
-            flags: MessageFlags.Ephemeral,
-        });
-        return;
-    }
-
-    // 元メッセージを更新（登録解除状態にする）
-    if (reminder?.replyMessageId && reminder.replyChannelId) {
-        try {
-            const channel = (await interaction.client.channels.fetch(
-                reminder.replyChannelId,
-            )) as TextChannel | null;
-
-            if (channel) {
-                const replyMessage = await channel.messages.fetch(
-                    reminder.replyMessageId,
-                );
-                if (replyMessage) {
-                    await replyMessage.edit({
-                        content: `🗑️ リマインダー \`${id}\` を解除しました。`,
-                        components: [],
-                    });
-                }
-            }
-        } catch (error) {
-            // 無視
+        if (result.reason === "not_owner") {
+            await interaction.reply({
+                content: "❌ 自分が登録したリマインダーのみ解除できます。",
+                flags: MessageFlags.Ephemeral,
+            });
+        } else {
+            // not_found, already_done
+            await interaction.reply({
+                content: `❓ リマインダー \`${id}\` は既に解除済みか存在しません。`,
+                flags: MessageFlags.Ephemeral,
+            });
         }
+        return;
     }
 
     await interaction.reply({

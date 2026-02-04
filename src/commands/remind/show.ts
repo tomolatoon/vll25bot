@@ -1,10 +1,8 @@
 import {
     type ChatInputCommandInteraction,
-    MessageFlags,
     SlashCommandSubcommandBuilder,
 } from "discord.js";
-import { buildReminderButtons } from "../../lib/remind-ui";
-import { getReminderById } from "../../reminder";
+import { handleReminderShow } from "../../lib/remind-handlers";
 
 export const showCommand = new SlashCommandSubcommandBuilder()
     .setName("show")
@@ -23,45 +21,5 @@ export async function handleShow(
     if (!interaction.guildId) return;
 
     const id = interaction.options.getString("id", true);
-    const reminder = getReminderById(id);
-
-    if (!reminder) {
-        await interaction.reply({
-            content: `❌ リマインダー \`${id}\` が見つかりません。`,
-            flags: MessageFlags.Ephemeral,
-        });
-        return;
-    }
-
-    if (reminder.guildId !== interaction.guildId) {
-        await interaction.reply({
-            content: "❌ このサーバーのリマインダーではありません。",
-            flags: MessageFlags.Ephemeral,
-        });
-        return;
-    }
-
-    const remindAt = new Date(reminder.remindAt);
-    const createdAt = reminder.createdAt
-        ? new Date(reminder.createdAt).toLocaleString("ja-JP")
-        : "不明";
-
-    const content = `🔍 **リマインダー詳細**
-
-🆔 **ID**: \`${reminder.id}\`
-📅 **日時**: ${remindAt.toLocaleString("ja-JP")}
-📢 **チャンネル**: <#${reminder.channelId}>
-👤 **作成者**: <@${reminder.createdBy}>
-📆 **作成日時**: ${createdAt}
-📝 **メッセージ**:
-${reminder.message}`;
-
-    // 操作ボタンを作成
-    const row = buildReminderButtons(reminder.id);
-
-    await interaction.reply({
-        content,
-        components: [row],
-        flags: MessageFlags.Ephemeral,
-    });
+    await handleReminderShow(interaction, id);
 }

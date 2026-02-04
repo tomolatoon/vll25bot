@@ -5,7 +5,8 @@
  */
 
 import { type ButtonInteraction, MessageFlags } from "discord.js";
-import { BUTTON_ID_REMIND_CANCEL, cancelReminder } from "../commands/remind";
+import { BUTTON_ID_REMIND_CANCEL } from "../commands/remind";
+import { handleReminderCancel } from "../lib/remind-handlers";
 import type { ButtonHandler } from "../types";
 
 /**
@@ -19,7 +20,7 @@ export const remindCancelButton: ButtonHandler = {
     idPrefix: BUTTON_ID_REMIND_CANCEL,
 
     async execute(interaction: ButtonInteraction, id: string): Promise<void> {
-        const result = cancelReminder(id, interaction.user.id);
+        const result = await handleReminderCancel(interaction, id);
 
         if (!result.success) {
             if (result.reason === "not_owner") {
@@ -29,7 +30,6 @@ export const remindCancelButton: ButtonHandler = {
                 });
             } else {
                 // not_found, already_done の場合
-                // wrong_guild は発生しない想定
                 await interaction.update({
                     content: `❓ リマインダー \`${id}\` は既に解除済みです。`,
                     components: [],

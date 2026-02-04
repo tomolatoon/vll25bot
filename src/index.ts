@@ -20,7 +20,12 @@ import {
     saveReminders,
     setClient,
 } from "./reminder";
-import type { ButtonHandler, Command, ModalHandler, SelectMenuHandler } from "./types";
+import type {
+    ButtonHandler,
+    Command,
+    ModalHandler,
+    SelectMenuHandler,
+} from "./types";
 import { logger } from "./utils/logger";
 
 // discord.js の Client 型を拡張

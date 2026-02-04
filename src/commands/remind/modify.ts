@@ -11,7 +11,10 @@ import {
     validateDateTimeInput,
     validateReminderForUpdate,
 } from "../../lib/remind";
-import { buildReminderButtons, buildReminderMessage } from "../../lib/remind-ui";
+import {
+    buildReminderButtons,
+    buildReminderMessage,
+} from "../../lib/remind-ui";
 import { updateReminder } from "../../reminder";
 
 export const modifyCommand = new SlashCommandSubcommandBuilder()
@@ -32,9 +35,7 @@ export const modifyCommand = new SlashCommandSubcommandBuilder()
     .addStringOption((option) =>
         option
             .setName("datetime")
-            .setDescription(
-                "新しい日時 (例: 2026/01/15 9:00, 明日 9:00)",
-            )
+            .setDescription("新しい日時 (例: 2026/01/15 9:00, 明日 9:00)")
             .setRequired(false),
     )
     .addChannelOption((option) =>

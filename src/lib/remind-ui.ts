@@ -1,8 +1,4 @@
-import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-} from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import type { ReminderData } from "../reminder";
 
 /** リマインダー解除ボタンのIDプレフィックス */
@@ -66,11 +62,7 @@ export function buildReminderButtons(
 // --- Remind List UI Components ---
 
 import { StringSelectMenuBuilder } from "discord.js";
-import {
-    type ListState,
-    REMINDERS_PER_PAGE,
-    encodeState,
-} from "./remind-list";
+import { type ListState, REMINDERS_PER_PAGE, encodeState } from "./remind-list";
 
 /** ボタン/Select Menu のIDプレフィックス */
 export const LIST_SELECT_PREFIX = "remind_list_select";
