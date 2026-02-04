@@ -327,7 +327,7 @@ export function buildOtherNavButtons(
         .setEmoji(state.order === "asc" ? "⬆️" : "⬇️");
 
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
-        orderButton,
         reloadButton,
+        orderButton,
     );
 }

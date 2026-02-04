@@ -121,10 +121,11 @@ export const remindListPrevHandler: ButtonHandler = {
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
         const navButtons = buildPaginationButtons(state, totalPages);
+        const otherNavButtons = buildOtherNavButtons(state);
 
         await interaction.update({
             content,
-            components: [selectMenu, actionButtons, navButtons],
+            components: [selectMenu, actionButtons, navButtons, otherNavButtons],
         });
     },
 };
@@ -152,10 +153,11 @@ export const remindListNextHandler: ButtonHandler = {
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
         const navButtons = buildPaginationButtons(state, totalPages);
+        const otherNavButtons = buildOtherNavButtons(state);
 
         await interaction.update({
             content,
-            components: [selectMenu, actionButtons, navButtons],
+            components: [selectMenu, actionButtons, navButtons, otherNavButtons],
         });
     },
 };
@@ -228,10 +230,11 @@ export const remindListOrderHandler: ButtonHandler = {
         const selectMenu = buildSelectMenu(pageItems, state);
         const actionButtons = buildActionButtons(state);
         const navButtons = buildPaginationButtons(state, totalPages);
+        const otherNavButtons = buildOtherNavButtons(state);
 
         await interaction.update({
             content,
-            components: [selectMenu, actionButtons, navButtons],
+            components: [selectMenu, actionButtons, navButtons, otherNavButtons],
         });
     },
 };
