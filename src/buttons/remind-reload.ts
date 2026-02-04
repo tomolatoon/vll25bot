@@ -5,7 +5,13 @@
  */
 
 import type { ButtonInteraction } from "discord.js";
-import { buildReminderButtons, buildReminderMessage } from "../commands/remind";
+import {
+    buildUpdateResponseContent,
+} from "../lib/remind";
+import {
+    buildReminderButtons,
+    buildReminderMessage,
+} from "../lib/remind-ui";
 import { getReminderById } from "../reminder";
 import type { ButtonHandler } from "../types";
 

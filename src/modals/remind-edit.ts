@@ -9,13 +9,13 @@ import {
     type ModalSubmitInteraction,
     type TextChannel,
 } from "discord.js";
-import { buildReminderButtons, buildReminderMessage } from "../commands/remind";
+import { buildReminderButtons, buildReminderMessage } from "../lib/remind-ui";
 import {
     buildChangesArray,
     buildUpdateResponseContent,
     validateDateTimeInput,
     validateReminderForUpdate,
-} from "../lib/reminder";
+} from "../lib/remind";
 import { updateReminder } from "../reminder";
 import type { ModalHandler } from "../types";
 

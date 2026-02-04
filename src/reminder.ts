@@ -28,9 +28,7 @@ class Reminder {
     // メモリ内で待機中のタイマーを管理 (ID -> Timeout)
     private scheduledTasks = new Map<string, ReturnType<typeof setTimeout>>();
 
-    constructor() {
-        // コンストラクタでの自動開始は廃止 (setClientで開始する)
-    }
+
 
     setClient(client: Client): void {
         this.client = client;

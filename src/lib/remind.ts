@@ -7,7 +7,7 @@
  */
 
 import type { TextChannel } from "discord.js";
-import { type ReminderData, getReminderById } from "../reminder";
+import { type ReminderData, cancelReminderTask, getReminderById } from "../reminder";
 import { parseFutureDateTime } from "./parser/date-parser";
 
 /**
@@ -167,4 +167,45 @@ ${changes.join("\n")}
 
 🔗 リマインダー登録メッセージは見つかりませんでした
 `;
+}
+
+/** リマインダー解除の結果 */
+export type CancelReminderResult =
+    | { success: true }
+    | {
+          success: false;
+          reason: "not_found" | "wrong_guild" | "not_owner" | "already_done";
+      };
+
+/**
+ * リマインダーを解除する共通処理
+ * @param id リマインダーID
+ * @param userId 実行者のユーザーID
+ * @param guildId ギルドID（コマンドからの削除時のみ指定）
+ */
+export function cancelReminder(
+    id: string,
+    userId: string,
+    guildId?: string,
+): CancelReminderResult {
+    const reminder = getReminderById(id);
+
+    if (!reminder) {
+        return { success: false, reason: "not_found" };
+    }
+
+    if (guildId && reminder.guildId !== guildId) {
+        return { success: false, reason: "wrong_guild" };
+    }
+
+    if (reminder.createdBy !== userId) {
+        return { success: false, reason: "not_owner" };
+    }
+
+    const stopped = cancelReminderTask(id);
+    if (!stopped) {
+        return { success: false, reason: "already_done" };
+    }
+
+    return { success: true };
 }

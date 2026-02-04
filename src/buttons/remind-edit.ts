@@ -13,6 +13,7 @@ import {
     TextInputStyle,
 } from "discord.js";
 import { getReminderById } from "../reminder";
+import { LIST_EDIT_PREFIX } from "../lib/remind-ui";
 import type { ButtonHandler } from "../types";
 
 /** リマインダー編集ボタンのIDプレフィックス */

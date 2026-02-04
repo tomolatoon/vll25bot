@@ -12,9 +12,8 @@ import {
     type TextChannel,
     type TextInputBuilder,
 } from "discord.js";
-import { BUTTON_ID_REMIND_CANCEL, cancelReminder } from "../commands/remind";
-import { buildReminderButtons } from "../commands/remind";
 import {
+    BUTTON_ID_REMIND_CANCEL,
     LIST_CANCEL_PREFIX,
     LIST_EDIT_PREFIX,
     LIST_NAV_NEXT_PREFIX,
@@ -28,7 +27,11 @@ import {
     buildListContent,
     buildOtherNavButtons,
     buildPaginationButtons,
+    buildReminderButtons,
     buildSelectMenu,
+} from "../lib/remind-ui";
+import { cancelReminder } from "../lib/remind";
+import {
     decodeState,
     encodeState,
     filterAndSortReminders,
