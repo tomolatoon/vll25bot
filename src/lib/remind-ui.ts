@@ -196,12 +196,14 @@ export function buildListEmbed(
             .setDescription("📭 リマインダーはありません。");
     }
 
+    const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+
     const embed = new EmbedBuilder()
         .setColor(REMIND_COLOR_INFO)
         .setTitle(`📋 リマインダー一覧 (${state.page + 1}/${totalPages})`)
         .setDescription(`ソート順: ${orderLabel}`);
 
-    for (const r of reminders) {
+    reminders.forEach((r, index) => {
         const remindAt = new Date(r.remindAt);
         const unixTime = Math.floor(remindAt.getTime() / 1000);
         // メッセージプレビューはEmbedのフィールド値制限(1024文字)内なら全部出してもいいが、
@@ -212,12 +214,14 @@ export function buildListEmbed(
                 ? `${r.message.substring(0, 50)}...`
                 : r.message;
 
+        const emoji = NUMBER_EMOJIS[index] || `#${index + 1}`;
+
         embed.addFields({
-            name: `🆔 \`${r.id}\``,
+            name: `\u200B\n${emoji} \`${r.id}\``,
             value: `📅 <t:${unixTime}:S> 📢 <#${r.channelId}>\n📝 ${msgPreview}`,
             inline: false,
         });
-    }
+    });
 
     return embed;
 }
@@ -234,7 +238,7 @@ export function buildSelectMenu(
     state: ListState,
     selectedId?: string,
 ): ActionRowBuilder<StringSelectMenuBuilder> {
-    const options = reminders.map((r) => {
+    const options = reminders.map((r, index) => {
         const date = new Date(r.remindAt);
         const dateStr = date.toLocaleString("ja-JP");
         const msgPreview =
@@ -242,8 +246,10 @@ export function buildSelectMenu(
                 ? `${r.message.substring(0, 20)}...`
                 : r.message;
 
+        const emoji = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][index] || `#${index + 1}`;
+
         return {
-            label: `${dateStr}`,
+            label: `${emoji} ${dateStr}`,
             description: msgPreview,
             value: r.id,
             default: r.id === selectedId,
