@@ -18,6 +18,8 @@ export interface ReminderData {
     createdBy: string;
     guildId: string;
     createdAt?: string; // Optional for backward compatibility
+    replyMessageId?: string; // リプライメッセージのID
+    replyChannelId?: string; // リプライメッセージのチャンネルID
 }
 
 class Reminder {
@@ -26,14 +28,10 @@ class Reminder {
     // メモリ内で待機中のタイマーを管理 (ID -> Timeout)
     private scheduledTasks = new Map<string, ReturnType<typeof setTimeout>>();
 
-    constructor() {
-        // 1分ごとにチェック (プリフェッチ)
-        this.startScheduler();
-    }
-
     setClient(client: Client): void {
         this.client = client;
-        // クライアント設定時に既存のスケジュール済みタスクがあれば実行可能状態にする(現状はexecuteでチェックしているので不要だが明示的にリロードしても良い)
+        // クライアント設定時にスケジュールを開始
+        this.startScheduler();
     }
 
     /** ポーリング開始 */
@@ -106,7 +104,7 @@ class Reminder {
     }
 
     /** リマインダーを削除 */
-    stop(id: string): boolean {
+    cancel(id: string): boolean {
         try {
             // メモリ上のタイマーを解除
             if (this.scheduledTasks.has(id)) {
@@ -126,6 +124,101 @@ class Reminder {
         } catch (error) {
             logger.error("❌ リマインダー削除失敗:", error);
             return false;
+        }
+    }
+
+    /**
+     * リマインダーを更新
+     *
+     * @param id リマインダーID
+     * @param updates 更新する項目（message, remindAt, channelId）
+     * @returns 更新後のリマインダーデータ、失敗時は null
+     *
+     * @事前条件 指定されたIDのリマインダーが存在すること
+     * @事後条件 DBが更新され、新しい日時の場合はスケジュールが再設定される
+     */
+    update(
+        id: string,
+        updates: {
+            message?: string;
+            remindAt?: Date;
+            channelId?: string;
+            replyMessageId?: string;
+            replyChannelId?: string;
+        },
+    ): ReminderData | null {
+        try {
+            const existing = db.get<ReminderRow>(
+                "SELECT * FROM reminders WHERE id = ?",
+                [id],
+            );
+            if (!existing) return null;
+
+            // 更新項目の準備
+            const newMessage = updates.message ?? existing.message;
+            const newRemindAt =
+                updates.remindAt?.getTime() ?? existing.remindAt;
+            const newChannelId = updates.channelId ?? existing.channelId;
+            const newReplyMessageId =
+                updates.replyMessageId ?? existing.replyMessageId ?? null;
+            const newReplyChannelId =
+                updates.replyChannelId ?? existing.replyChannelId ?? null;
+
+            // 過去の日時チェック
+            if (updates.remindAt && newRemindAt <= Date.now()) {
+                logger.error("❌ 過去の日時には更新できません");
+                return null;
+            }
+
+            // DB更新
+            db.run(
+                `UPDATE reminders
+                 SET message = ?, remindAt = ?, channelId = ?, replyMessageId = ?, replyChannelId = ?
+                 WHERE id = ?`,
+                [
+                    newMessage,
+                    newRemindAt,
+                    newChannelId,
+                    newReplyMessageId,
+                    newReplyChannelId,
+                    id,
+                ],
+            );
+
+            // スケジュール済みタスクを再設定
+            if (updates.remindAt && this.scheduledTasks.has(id)) {
+                clearTimeout(this.scheduledTasks.get(id));
+                this.scheduledTasks.delete(id);
+            }
+
+            const data: ReminderData = {
+                id,
+                channelId: newChannelId,
+                message: newMessage,
+                remindAt: new Date(newRemindAt).toISOString(),
+                createdBy: existing.createdBy,
+                guildId: existing.guildId,
+                createdAt: new Date(existing.createdAt).toISOString(),
+                replyMessageId: newReplyMessageId ?? undefined,
+                replyChannelId: newReplyChannelId ?? undefined,
+            };
+
+            // 直近なら即時スケジュール
+            if (updates.remindAt) {
+                const now = Date.now();
+                if (newRemindAt <= now + 70 * 1000) {
+                    this.scheduleTask(id, newRemindAt, data);
+                }
+            }
+
+            logger.info(
+                `✏️ リマインダー更新: ${id} @ ${new Date(newRemindAt).toLocaleString("ja-JP")}`,
+            );
+
+            return data;
+        } catch (error) {
+            logger.error("❌ リマインダー更新失敗:", error);
+            return null;
         }
     }
 
@@ -192,24 +285,35 @@ class Reminder {
             return;
         }
 
+        // 送信直前にDBから最新のデータを取得（編集されている可能性があるため）
+        const latestData = this.findById(data.id);
+        if (!latestData) {
+            logger.warn(
+                `⚠️ リマインダー ${data.id} が見つかりません（既に削除済み）`,
+            );
+            return;
+        }
+
         try {
             const channel = (await this.client.channels.fetch(
-                data.channelId,
+                latestData.channelId,
             )) as TextChannel | null;
 
             if (channel) {
-                await channel.send(data.message);
-                logger.info(`📤 送信完了: ${data.id} -> #${channel.name}`);
+                await channel.send(latestData.message);
+                logger.info(
+                    `📤 送信完了: ${latestData.id} -> #${channel.name}`,
+                );
             } else {
-                logger.error(`❌ チャンネル未発見: ${data.channelId}`);
+                logger.error(`❌ チャンネル未発見: ${latestData.channelId}`);
             }
         } catch (error) {
-            logger.error(`❌ 送信エラー (${data.id}):`, error);
+            logger.error(`❌ 送信エラー (${latestData.id}):`, error);
         }
 
         // 送信成功/失敗に関わらず(チャネル不明等は回復不能なので) 削除
         // クライアント未設定エラー以外のエラー（権限など）はここで削除される
-        this.removeDbRecord(data.id);
+        this.removeDbRecord(latestData.id);
     }
 
     /** DBからレコード削除（内部用） */
@@ -316,7 +420,7 @@ class Reminder {
     }
 
     /** 全タスクを停止（DB全削除）- 慎重に */
-    stopAll(): void {
+    cancelAll(): void {
         db.run("DELETE FROM reminders");
         // メモリもクリア
         for (const timer of this.scheduledTasks.values()) {
@@ -327,7 +431,7 @@ class Reminder {
     }
 
     /** ギルドの全タスクを停止 */
-    stopAllByGuild(guildId: string): number {
+    cancelAllByGuild(guildId: string): number {
         const targets = this.getByGuild(guildId);
 
         // メモリ上のタイマー解除
@@ -365,6 +469,8 @@ class Reminder {
             createdBy: row.createdBy,
             guildId: row.guildId,
             createdAt: new Date(row.createdAt).toISOString(),
+            replyMessageId: row.replyMessageId,
+            replyChannelId: row.replyChannelId,
         };
     }
 }
@@ -375,14 +481,15 @@ const reminder = new Reminder();
 // 外部公開用の関数
 export const setClient = (client: Client) => reminder.setClient(client);
 export const createReminder = reminder.create.bind(reminder);
+export const updateReminder = reminder.update.bind(reminder);
 
 export const getReminders = () => reminder.getAll();
 export const getReminderById = reminder.findById.bind(reminder);
 export const getRemindersByGuild = reminder.getByGuild.bind(reminder);
 
-export const stopReminder = reminder.stop.bind(reminder);
-export const stopReminders = () => reminder.stopAll();
-export const stopRemindersByGuild = reminder.stopAllByGuild.bind(reminder);
+export const cancelReminderTask = reminder.cancel.bind(reminder);
+export const cancelAllReminders = () => reminder.cancelAll();
+export const cancelRemindersByGuild = reminder.cancelAllByGuild.bind(reminder);
 
 export const saveReminders = () => reminder.save();
 export const restoreReminders = () => reminder.restore();

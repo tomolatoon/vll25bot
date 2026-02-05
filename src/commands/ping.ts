@@ -21,7 +21,9 @@ export const ping: Command = {
         const totalTime = sent.createdTimestamp - interaction.createdTimestamp; // 全体の応答時間
 
         await interaction.editReply(
-            `🏓 Pong!\n📡 合計応答時間: ${totalTime}ms\n`,
+            `🏓 Pong!
+📡 合計応答時間: ${totalTime}ms
+`,
         );
     },
 };

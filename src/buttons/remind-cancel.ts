@@ -4,11 +4,10 @@
  * リマインダー登録時に表示される「登録解除」ボタンの処理を担当します。
  */
 
-import { MessageFlags, type ButtonInteraction } from "discord.js";
-import {
-    BUTTON_ID_REMIND_CANCEL,
-    cancelReminder,
-} from "../commands/remind";
+import { type ButtonInteraction, EmbedBuilder, MessageFlags } from "discord.js";
+import { BUTTON_ID_REMIND_CANCEL } from "../commands/remind";
+import { handleReminderCancel } from "../lib/remind-handlers";
+import { REMIND_COLOR_INFO, REMIND_COLOR_SUCCESS } from "../lib/remind-ui";
 import type { ButtonHandler } from "../types";
 
 /**
@@ -22,7 +21,7 @@ export const remindCancelButton: ButtonHandler = {
     idPrefix: BUTTON_ID_REMIND_CANCEL,
 
     async execute(interaction: ButtonInteraction, id: string): Promise<void> {
-        const result = cancelReminder(id, interaction.user.id);
+        const result = await handleReminderCancel(interaction, id);
 
         if (!result.success) {
             if (result.reason === "not_owner") {
@@ -32,9 +31,15 @@ export const remindCancelButton: ButtonHandler = {
                 });
             } else {
                 // not_found, already_done の場合
-                // wrong_guild は発生しない想定
                 await interaction.update({
-                    content: `❓ リマインダー \`${id}\` は既に解除済みです。`,
+                    content: "",
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(REMIND_COLOR_INFO)
+                            .setDescription(
+                                `❓ リマインダー \`${id}\` は既に解除済みです。`,
+                            ),
+                    ],
                     components: [],
                 });
             }
@@ -42,7 +47,13 @@ export const remindCancelButton: ButtonHandler = {
         }
 
         await interaction.update({
-            content: `🗑️ リマインダー \`${id}\` を解除しました。`,
+            content: "",
+            embeds: [
+                new EmbedBuilder()
+                    .setColor(REMIND_COLOR_SUCCESS)
+                    .setTitle("🗑️ リマインダー解除")
+                    .setDescription(`リマインダー \`${id}\` を解除しました。`),
+            ],
             components: [],
         });
     },

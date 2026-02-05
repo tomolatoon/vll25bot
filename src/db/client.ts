@@ -13,6 +13,8 @@ export interface ReminderRow {
     createdAt: number; // Unix Timestamp (ms)
     createdBy: string;
     guildId: string;
+    replyMessageId?: string; // リプライメッセージのID (nullable)
+    replyChannelId?: string; // リプライメッセージのチャンネルID (nullable)
 }
 
 export class Database {
@@ -33,26 +35,69 @@ export class Database {
                 remindAt INTEGER NOT NULL,
                 createdAt INTEGER NOT NULL,
                 createdBy TEXT NOT NULL,
-                guildId TEXT NOT NULL
+                guildId TEXT NOT NULL,
+                replyMessageId TEXT,
+                replyChannelId TEXT
             );
         `);
         // インデックス作成（検索高速化）
         this.db.run(`
             CREATE INDEX IF NOT EXISTS idx_remindAt ON reminders(remindAt);
         `);
+
+        // マイグレーション: 既存テーブルに新しいカラムを追加
+        this.migrateAddReplyMessageColumns();
+    }
+
+    /**
+     * マイグレーション: replyMessageId と replyChannelId カラムを追加
+     */
+    private migrateAddReplyMessageColumns() {
+        try {
+            // カラムが存在するかチェック
+            const tableInfo = this.db
+                .query("PRAGMA table_info(reminders)")
+                .all() as Array<{
+                name: string;
+            }>;
+            const hasReplyMessageId = tableInfo.some(
+                (col) => col.name === "replyMessageId",
+            );
+
+            if (!hasReplyMessageId) {
+                logger.info(
+                    "🔄 マイグレーション: replyMessageId, replyChannelId カラムを追加中...",
+                );
+                this.db.run(
+                    "ALTER TABLE reminders ADD COLUMN replyMessageId TEXT",
+                );
+                this.db.run(
+                    "ALTER TABLE reminders ADD COLUMN replyChannelId TEXT",
+                );
+                logger.info("✅ マイグレーション完了");
+            }
+        } catch (error) {
+            logger.error("❌ マイグレーション失敗:", error);
+        }
     }
 
     /**
      * クエリ実行 (SELECT)
      */
-    query<T = unknown>(sql: string, params: (string | number | boolean | null)[] = []): T[] {
+    query<T = unknown>(
+        sql: string,
+        params: (string | number | boolean | null)[] = [],
+    ): T[] {
         return this.db.query(sql).all(...params) as T[];
     }
 
     /**
      * クエリ実行 (単一行取得)
      */
-    get<T = unknown>(sql: string, params: (string | number | boolean | null)[] = []): T | null {
+    get<T = unknown>(
+        sql: string,
+        params: (string | number | boolean | null)[] = [],
+    ): T | null {
         return this.db.query(sql).get(...params) as T | null;
     }
 

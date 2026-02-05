@@ -6,20 +6,61 @@
  * 2. ここでインポートして buttonHandlers 配列に追加
  */
 
-import type { ButtonInteraction, Client, Collection } from "discord.js";
-import type { ButtonHandler } from "../types";
+import {
+    type AnySelectMenuInteraction,
+    type ButtonInteraction,
+    type Client,
+    Collection,
+} from "discord.js";
+import type { ButtonHandler, SelectMenuHandler } from "../types";
 import { remindCancelButton } from "./remind-cancel";
+import { remindCopyIdButton } from "./remind-copy-id";
+import { remindEditButton } from "./remind-edit";
+import {
+    remindListCancelHandler,
+    remindListEditHandler,
+    remindListNextHandler,
+    remindListOrderHandler,
+    remindListPageHandler,
+    remindListPrevHandler,
+    remindListReloadHandler,
+    remindListSelectHandler,
+    remindListShowHandler,
+} from "./remind-list-handlers";
+import { remindReloadButton } from "./remind-reload";
 
 // ボタンハンドラー一覧（新しいボタンはここに追加）
-const buttonHandlers: ButtonHandler[] = [remindCancelButton];
+const buttonHandlers: ButtonHandler[] = [
+    remindCancelButton,
+    remindEditButton,
+    remindCopyIdButton,
+    remindReloadButton,
+    // リマインダー一覧関連
+    remindListPrevHandler,
+    remindListNextHandler,
+    remindListPageHandler,
+    remindListOrderHandler,
+    remindListShowHandler,
+    remindListEditHandler,
+    remindListCancelHandler,
+    remindListReloadHandler,
+];
+
+// Select Menuハンドラー一覧
+const selectMenuHandlers: SelectMenuHandler[] = [remindListSelectHandler];
 
 /**
- * クライアントにボタンハンドラーを登録
+ * クライアントにボタン・Select Menuハンドラーを登録
  * @param client Discord クライアント
  */
 export function registerButtonHandlers(client: Client): void {
     for (const handler of buttonHandlers) {
         client.buttonHandlers.set(handler.idPrefix, handler);
+    }
+
+    // Select Menuハンドラーも登録
+    for (const handler of selectMenuHandlers) {
+        client.selectMenuHandlers.set(handler.idPrefix, handler);
     }
 }
 
@@ -37,6 +78,26 @@ export async function dispatchButtonInteraction(
 ): Promise<boolean> {
     const [action, id] = interaction.customId.split(":");
     const handler = interaction.client.buttonHandlers.get(action);
+
+    if (handler && id) {
+        await handler.execute(interaction, id);
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Select Menuインタラクションをディスパッチ
+ *
+ * @param interaction セレクトメニューインタラクション
+ * @returns ハンドラーが見つかり処理された場合は true
+ */
+export async function dispatchSelectMenuInteraction(
+    interaction: AnySelectMenuInteraction,
+): Promise<boolean> {
+    const [action, id] = interaction.customId.split(":");
+    const handler = interaction.client.selectMenuHandlers?.get(action);
 
     if (handler && id) {
         await handler.execute(interaction, id);
