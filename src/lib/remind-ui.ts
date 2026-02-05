@@ -48,25 +48,22 @@ export function buildReminderEmbed(
     title = "✅ リマインダーを登録しました！",
 ): EmbedBuilder {
     const remindAt = new Date(reminder.remindAt);
+    const unixTime = Math.floor(remindAt.getTime() / 1000);
 
     return new EmbedBuilder()
         .setColor(REMIND_COLOR_SUCCESS)
         .setTitle(title)
+        .setDescription(reminder.message+"\n\u200b")
         .addFields(
             {
                 name: "📅 日時",
-                value: remindAt.toLocaleString("ja-JP"),
+                value: `<t:${unixTime}:S>`,
                 inline: true,
             },
             {
                 name: "📢 チャンネル",
                 value: `<#${reminder.channelId}>`,
                 inline: true,
-            },
-            {
-                name: "📝 メッセージ",
-                value: reminder.message,
-                inline: false,
             },
             {
                 name: "🆔 ID",
@@ -205,8 +202,8 @@ export function buildListEmbed(
         .setDescription(`ソート順: ${orderLabel}`);
 
     for (const r of reminders) {
-        const date = new Date(r.remindAt);
-        const dateStr = date.toLocaleString("ja-JP");
+        const remindAt = new Date(r.remindAt);
+        const unixTime = Math.floor(remindAt.getTime() / 1000);
         // メッセージプレビューはEmbedのフィールド値制限(1024文字)内なら全部出してもいいが、
         // 一覧性のためある程度で切るか、全文出すかはバランス次第。
         // ここでは従来のリスト形式を踏襲し、やや短めにしつつフォーマットを整える。
@@ -216,8 +213,8 @@ export function buildListEmbed(
                 : r.message;
 
         embed.addFields({
-            name: `🆔 ${r.id}`,
-            value: `📅 ${dateStr} 📢 <#${r.channelId}>\n📝 ${msgPreview}`,
+            name: `🆔 \`${r.id}\``,
+            value: `📅 <t:${unixTime}:S> 📢 <#${r.channelId}>\n📝 ${msgPreview}`,
             inline: false,
         });
     }
