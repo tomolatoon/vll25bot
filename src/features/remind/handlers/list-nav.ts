@@ -1,7 +1,7 @@
 import type { ButtonInteraction } from "discord.js";
 import type { ButtonHandler } from "../../../core/types";
 import { decodeState, getNextState } from "../utils/list";
-import { renderReminderList } from "../utils/ui";
+import { renderReminderList } from "../services/renderer";
 
 export const listNavHandler: ButtonHandler = {
     idPrefix: "remind_list_",

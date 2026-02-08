@@ -1,10 +1,8 @@
 import type { AnySelectMenuInteraction } from "discord.js";
 import type { SelectMenuHandler } from "../../../core/types";
 import { decodeState } from "../utils/list";
-import {
-    LIST_SELECT_PREFIX,
-    renderReminderList,
-} from "../utils/ui";
+import { LIST_SELECT_PREFIX } from "../constants";
+import { renderReminderList } from "../services/renderer";
 
 export const listSelectHandler: SelectMenuHandler = {
     idPrefix: LIST_SELECT_PREFIX,

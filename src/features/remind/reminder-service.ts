@@ -156,6 +156,14 @@ export class ReminderService {
         await this.repository.delete(id);
     }
 
+    /**
+     * リマインダーを削除する（権限チェックなどは呼び出し元で行うこと）
+     */
+    public async delete(id: string): Promise<void> {
+        await this.forceCancel(id);
+        logger.info(`🗑️ リマインダー削除 (delete called): ${id}`);
+    }
+
     private async checkReminders() {
         const now = Date.now();
         const threshold = now + 70 * 1000; // 70秒のバッファ
@@ -263,59 +271,7 @@ export class ReminderService {
         await this.forceCancel(fresh.id);
     }
 
-    // 移行ロジック
-    public async restoreFromJson(): Promise<number> {
-        if (!existsSync(REMINDER_FILE_PATH)) return 0;
 
-        logger.info("📂 reminder.json をDBに変換中...");
-
-        try {
-            const content = readFileSync(REMINDER_FILE_PATH, "utf-8");
-            const oldData = JSON.parse(content) as (ReminderData & {
-                id: string;
-                createdAt: string;
-            })[];
-            let count = 0;
-            const now = Date.now();
-
-            for (const item of oldData) {
-                const remindAt = new Date(item.remindAt).getTime();
-                if (remindAt <= now) {
-                    logger.info(`⏭️ 過去のリマインダーをスキップ: ${item.id}`);
-                    continue;
-                }
-
-                await this.repository.create({
-                    id: item.id,
-                    channelId: item.channelId,
-                    message: item.message,
-                    remindAt: remindAt,
-                    createdBy: item.createdBy,
-                    guildId: item.guildId,
-                    createdAt: item.createdAt
-                        ? new Date(item.createdAt).getTime()
-                        : now,
-                    replyMessageId: item.replyMessageId ?? null,
-                    replyChannelId: item.replyChannelId ?? null,
-                });
-                count++;
-            }
-
-            const migratedPath = `${REMINDER_FILE_PATH}.migrated`;
-            renameSync(REMINDER_FILE_PATH, migratedPath);
-            logger.info(
-                `✅ ${count} 件のリマインダーを移行しました。古いファイルを ${migratedPath} にリベースしました。`,
-            );
-
-            // 初回チェックを即時実行
-            this.checkReminders();
-
-            return count;
-        } catch (error) {
-            logger.error("❌ 移行失敗:", error);
-            return 0;
-        }
-    }
 
     public async getReminderById(id: string): Promise<Reminder | null> {
         return this.repository.findById(id);

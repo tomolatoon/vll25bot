@@ -1,9 +1,9 @@
 import { parseFutureDateTime } from "../../../lib/parser/date-parser";
 import { reminderService } from "../reminder-service"; // シングルトンインスタンス
-import type { ReminderData } from "../types";
+import type { Reminder } from "../types";
 
 export type ValidationResult =
-    | { success: true; reminder: ReminderData }
+    | { success: true; reminder: Reminder }
     | { success: false; error: string };
 
 export type DateTimeValidationResult =

@@ -12,7 +12,7 @@ import {
     filterAndSortReminders,
     getTotalPages,
 } from "../utils/list";
-import { LIST_NAV_PAGE_PREFIX, LIST_PAGE_JUMP_PREFIX } from "../utils/ui";
+import { LIST_NAV_PAGE_PREFIX, LIST_PAGE_JUMP_PREFIX } from "../constants";
 
 export const listPageHandler: ButtonHandler = {
     idPrefix: LIST_NAV_PAGE_PREFIX,

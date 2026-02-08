@@ -6,10 +6,14 @@ import type { ButtonHandler } from "../../../core/types";
 import { reminderService } from "../reminder-service";
 import {
     REMIND_COLOR_INFO,
+} from "../constants";
+import {
     buildReminderButtons,
+} from "../components/actions";
+import {
     buildReminderDetailEmbed,
     buildReminderEmbed,
-} from "../utils/ui";
+} from "../components/embeds";
 
 export const reloadHandler: ButtonHandler = {
     idPrefix: "remind_reload:",

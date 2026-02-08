@@ -9,6 +9,7 @@ import {
 import { Loader } from "./core/loader";
 import { Registry } from "./core/registry";
 import { reminderService } from "./features/remind/reminder-service";
+import { migrationService } from "./features/remind/services/migration";
 import { logger } from "./utils/logger";
 
 // Discord クライアントを作成
@@ -37,7 +38,7 @@ client.once("clientReady", async () => {
 
     // リマインダーサービスの初期化
     reminderService.setClient(client);
-    await reminderService.restoreFromJson();
+    await migrationService.restoreFromJson();
 });
 
 // スラッシュコマンド実行時

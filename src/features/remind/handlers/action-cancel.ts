@@ -1,71 +1,65 @@
 import {
     type ButtonInteraction,
-    EmbedBuilder,
     MessageFlags,
 } from "discord.js";
 import type { ButtonHandler } from "../../../core/types";
 import { reminderService } from "../reminder-service";
+import { validateReminderForUpdate } from "../utils/validation";
 import {
     BUTTON_ID_REMIND_CANCEL,
-    REMIND_COLOR_INFO,
+} from "../constants";
+import {
     buildCancelEmbed,
+} from "../components/embeds";
+import {
     buildCancelledButtons,
-} from "../utils/ui";
+} from "../components/actions";
 
 export const cancelHandler: ButtonHandler = {
-    idPrefix: `${BUTTON_ID_REMIND_CANCEL}:`,
+    idPrefix: BUTTON_ID_REMIND_CANCEL + ":",
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
-        await interaction.deferUpdate();
         const reminderId = interaction.customId.split(":")[1];
-        const result = await reminderService.cancel(
+
+        // 検証
+        const validation = await validateReminderForUpdate(
             reminderId,
             interaction.user.id,
-            interaction.guildId || "",
         );
 
-        if (!result.success) {
-            if (result.reason === "not_owner") {
-                await interaction.followUp({
-                    content: "❌ 自分が登録したリマインダーのみ解除できます。",
-                    flags: MessageFlags.Ephemeral,
-                });
-            } else {
-                await interaction.editReply({
-                    content: "",
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(REMIND_COLOR_INFO)
-                            .setDescription(
-                                `❓ リマインダー \`${reminderId}\` は既に解除済みです。`,
-                            ),
-                    ],
-                    components: [],
-                });
-            }
+        if (!validation.success) {
+            await interaction.reply({
+                content: `❌ ${validation.error}`,
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
+
+        const reminder = validation.reminder;
+
+        // 削除実行
+        await reminderService.delete(reminderId);
 
         // キャンセル状態を表示するためにメッセージを更新
         // まず、元の登録メッセージ（もしあれば）を更新する
         // ただし、今押されたボタンのメッセージと同じ場合は editReply で更新されるのでスキップする
         if (
-            result.reminder.replyMessageId &&
-            result.reminder.replyChannelId &&
-            result.reminder.replyMessageId !== interaction.message.id
+            reminder.replyMessageId &&
+            reminder.replyChannelId &&
+            reminder.replyMessageId !== interaction.message.id
         ) {
             try {
                 const channel = await interaction.client.channels.fetch(
-                    result.reminder.replyChannelId,
+                    reminder.replyChannelId,
                 );
                 if (channel?.isTextBased()) {
                     const message = await channel.messages.fetch(
-                        result.reminder.replyMessageId,
+                        reminder.replyMessageId,
                     );
                     await message.edit({
-                        embeds: [buildCancelEmbed(result.reminder)],
+                        embeds: [buildCancelEmbed(reminder)],
                         components: [
-                            buildCancelledButtons(result.reminder.id),
+                            buildCancelledButtons(reminder.id),
                         ],
                     });
                 }
@@ -75,10 +69,10 @@ export const cancelHandler: ButtonHandler = {
         }
 
         // 次に、インタラクション元のメッセージを更新する
-        await interaction.editReply({
+        await interaction.update({
             content: "",
-            embeds: [buildCancelEmbed(result.reminder)],
-            components: [buildCancelledButtons(result.reminder.id)],
+            embeds: [buildCancelEmbed(reminder)],
+            components: [buildCancelledButtons(reminder.id)],
         });
     },
 };

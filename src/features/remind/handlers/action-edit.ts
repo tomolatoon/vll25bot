@@ -1,13 +1,10 @@
 import {
-    ActionRowBuilder,
     type ButtonInteraction,
     MessageFlags,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
 } from "discord.js";
 import type { ButtonHandler } from "../../../core/types";
 import { reminderService } from "../reminder-service";
+import { buildEditReminderModal } from "../components/modals";
 
 export const editHandler: ButtonHandler = {
     idPrefix: "remind_edit:",
@@ -32,34 +29,7 @@ export const editHandler: ButtonHandler = {
             return;
         }
 
-        const modal = new ModalBuilder()
-            .setCustomId(`remind_edit_modal:${reminderId}`)
-            .setTitle("リマインダー編集");
-
-        const messageInput = new TextInputBuilder()
-            .setCustomId("message")
-            .setLabel("メッセージ")
-            .setStyle(TextInputStyle.Paragraph)
-            .setValue(reminder.message)
-            .setRequired(false);
-
-        const remindAt = new Date(reminder.remindAt);
-        const datetimeInput = new TextInputBuilder()
-            .setCustomId("datetime")
-            .setLabel("日時 (例: 2026/01/15 9:00, 明日 9:00)")
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder(`現在: ${remindAt.toLocaleString("ja-JP")}`)
-            .setRequired(false);
-
-        modal.addComponents(
-            new ActionRowBuilder<TextInputBuilder>().addComponents(
-                messageInput,
-            ),
-            new ActionRowBuilder<TextInputBuilder>().addComponents(
-                datetimeInput,
-            ),
-        );
-
+        const modal = buildEditReminderModal(reminderId, reminder.message);
         await interaction.showModal(modal);
     },
 };

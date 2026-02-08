@@ -1,17 +1,18 @@
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import type { ModalHandler } from "../../../core/types";
-import { logger } from "../../../utils/logger";
 import { reminderService } from "../reminder-service";
-import { decodeState, encodeState } from "../utils/list";
 import {
-    LIST_PAGE_JUMP_PREFIX,
-    LIST_RELOAD_PREFIX,
     buildReminderButtons,
+} from "../components/actions";
+import {
     buildReminderEmbed,
     buildUpdateResponseEmbed,
-} from "../utils/ui";
+} from "../components/embeds"; 
 import { buildChangesArray, validateDateTimeInput } from "../utils/validation";
-import { renderReminderList } from "../utils/ui";
+
+// NOTE: ui-exports is temporary, I should import from individual files if ui-exports doesn't work or if I want to be clean.
+// Given previous error, I should import from components directly.
+// actually, I will import from components/embeds etc directly.
 
 const editModalHandler: ModalHandler = {
     idPrefix: "remind_edit_modal:",
@@ -87,40 +88,4 @@ const editModalHandler: ModalHandler = {
     },
 };
 
-const pageJumpModalHandler: ModalHandler = {
-    idPrefix: LIST_PAGE_JUMP_PREFIX,
-    type: "MODAL",
-    async execute(interaction: ModalSubmitInteraction) {
-        logger.info(
-            `🔍 pageJumpModalHandler executing. customId: ${interaction.customId}`,
-        );
-        if (!interaction.guildId) return;
-
-        const input = interaction.fields.getTextInputValue("page");
-        const pageNum = Number.parseInt(input, 10);
-
-        if (Number.isNaN(pageNum) || pageNum < 1) {
-            await interaction.reply({
-                content: "❌ 有効なページ番号を入力してください。",
-                flags: MessageFlags.Ephemeral,
-            });
-            return;
-        }
-
-        // モーダルのcustomIdから現在の状態をデコード
-        // フォーマット: remind_list_jump:<encoded_state>
-        const { state } = decodeState(
-            interaction.customId,
-            interaction.guildId,
-            interaction.user.id,
-        );
-
-        // ページ番号を更新 (0始まり)
-        state.page = pageNum - 1;
-
-        // 新しい状態でリストを再描画
-        await renderReminderList(interaction, state);
-    },
-};
-
-export default [editModalHandler, pageJumpModalHandler];
+export default editModalHandler;
