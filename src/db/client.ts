@@ -2,27 +2,20 @@ import { Database as SQLite } from "bun:sqlite";
 import { DB_FILE_PATH } from "../constants";
 import { logger } from "../utils/logger";
 
-/**
- * リマインダーのスキーマ定義
- */
-export interface ReminderRow {
-    id: string;
-    channelId: string;
-    message: string;
-    remindAt: number; // Unix Timestamp (ms)
-    createdAt: number; // Unix Timestamp (ms)
-    createdBy: string;
-    guildId: string;
-    replyMessageId?: string; // リプライメッセージのID (nullable)
-    replyChannelId?: string; // リプライメッセージのチャンネルID (nullable)
-}
-
-export class Database {
+export class DatabaseClient {
     private db: SQLite;
+    private static instance: DatabaseClient;
 
-    constructor() {
+    private constructor() {
         this.db = new SQLite(DB_FILE_PATH);
         this.init();
+    }
+
+    public static getInstance(): DatabaseClient {
+        if (!DatabaseClient.instance) {
+            DatabaseClient.instance = new DatabaseClient();
+        }
+        return DatabaseClient.instance;
     }
 
     private init() {
@@ -49,12 +42,8 @@ export class Database {
         this.migrateAddReplyMessageColumns();
     }
 
-    /**
-     * マイグレーション: replyMessageId と replyChannelId カラムを追加
-     */
     private migrateAddReplyMessageColumns() {
         try {
-            // カラムが存在するかチェック
             const tableInfo = this.db
                 .query("PRAGMA table_info(reminders)")
                 .all() as Array<{
@@ -66,7 +55,7 @@ export class Database {
 
             if (!hasReplyMessageId) {
                 logger.info(
-                    "🔄 マイグレーション: replyMessageId, replyChannelId カラムを追加中...",
+                    "🔄 Migration: Adding replyMessageId, replyChannelId columns...",
                 );
                 this.db.run(
                     "ALTER TABLE reminders ADD COLUMN replyMessageId TEXT",
@@ -74,16 +63,13 @@ export class Database {
                 this.db.run(
                     "ALTER TABLE reminders ADD COLUMN replyChannelId TEXT",
                 );
-                logger.info("✅ マイグレーション完了");
+                logger.info("✅ Migration complete");
             }
         } catch (error) {
-            logger.error("❌ マイグレーション失敗:", error);
+            logger.error("❌ Migration failed:", error);
         }
     }
 
-    /**
-     * クエリ実行 (SELECT)
-     */
     query<T = unknown>(
         sql: string,
         params: (string | number | boolean | null)[] = [],
@@ -91,9 +77,6 @@ export class Database {
         return this.db.query(sql).all(...params) as T[];
     }
 
-    /**
-     * クエリ実行 (単一行取得)
-     */
     get<T = unknown>(
         sql: string,
         params: (string | number | boolean | null)[] = [],
@@ -101,20 +84,10 @@ export class Database {
         return this.db.query(sql).get(...params) as T | null;
     }
 
-    /**
-     * コマンド実行 (INSERT, UPDATE, DELETE)
-     */
     run(sql: string, params: (string | number | boolean | null)[] = []) {
         this.db.run(sql, params);
     }
-
-    /**
-     * プリペアドステートメント用
-     */
-    prepare(sql: string) {
-        return this.db.prepare(sql);
-    }
 }
 
-// シングルトン
-export const db = new Database();
+// Singleton export
+export const db = DatabaseClient.getInstance();

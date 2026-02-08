@@ -7,8 +7,10 @@
  *   bun run deploy --global --guild  両方を登録
  */
 
+import { join } from "node:path";
 import { REST, Routes } from "discord.js";
-import { getCommandsData } from "./commands";
+import { Loader } from "./core/loader";
+import { Registry } from "./core/registry";
 
 // 環境変数（Bunは.envを自動で読み込む）
 const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = Bun.env;
@@ -31,10 +33,19 @@ const help = () => `📖 使い方:
     GUILD_ID:      ${GUILD_ID || "未設定"}
 `;
 
-const commands = getCommandsData();
+// Loaderを使用してコマンドを収集
+const registry = new Registry();
+const loader = new Loader(registry);
+
+const loadCommands = async () => {
+    const featuresPath = join(__dirname, "features");
+    await loader.loadFeatures(featuresPath);
+    return registry.commands.map((cmd) => cmd.data.toJSON());
+};
+
 const rest = new REST().setToken(DISCORD_TOKEN);
 
-const deployToGlobal = async () => {
+const deployToGlobal = async (commands: unknown[]) => {
     console.log(`🔄 ${commands.length}個のコマンドをグローバルに登録中...`);
     const data = (await rest.put(Routes.applicationCommands(CLIENT_ID), {
         body: commands,
@@ -43,7 +54,7 @@ const deployToGlobal = async () => {
     console.log("⏳ 反映に最大1時間かかります");
 };
 
-const deployToGuild = async (guild_id: string) => {
+const deployToGuild = async (guild_id: string, commands: unknown[]) => {
     console.log(
         `🔄 ${commands.length}個のコマンドをギルド（${guild_id}）に登録中...`,
     );
@@ -63,18 +74,24 @@ if (!deployGlobal && !deployGuild) {
     process.exit(0);
 }
 
-try {
-    if (deployGlobal) {
-        await deployToGlobal();
-    }
+const main = async () => {
+    try {
+        const commands = await loadCommands();
 
-    if (deployGuild) {
-        if (!GUILD_ID) {
-            console.error("❌ GUILD_ID が設定されていません");
-            process.exit(1);
+        if (deployGlobal) {
+            await deployToGlobal(commands);
         }
-        await deployToGuild(GUILD_ID);
+
+        if (deployGuild) {
+            if (!GUILD_ID) {
+                console.error("❌ GUILD_ID が設定されていません");
+                process.exit(1);
+            }
+            await deployToGuild(GUILD_ID, commands);
+        }
+    } catch (error) {
+        console.error("❌ 登録失敗:", error);
     }
-} catch (error) {
-    console.error("❌ 登録失敗:", error);
-}
+};
+
+main();

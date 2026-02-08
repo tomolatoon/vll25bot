@@ -75,7 +75,11 @@ class Logger {
         if (args.length > 0) {
             fileMessage += ` ${args
                 .map((arg) =>
-                    typeof arg === "object" ? JSON.stringify(arg) : String(arg),
+                    typeof arg === "object"
+                        ? arg instanceof Error
+                            ? `${arg.name}: ${arg.message}\n${arg.stack}`
+                            : JSON.stringify(arg)
+                        : String(arg),
                 )
                 .join(" ")}`;
         }

@@ -1,42 +1,15 @@
+import { join } from "node:path";
 import {
     type ChatInputCommandInteraction,
     Client,
-    Collection,
     GatewayIntentBits,
     type InteractionReplyOptions,
     MessageFlags,
 } from "discord.js";
-import {
-    dispatchButtonInteraction,
-    dispatchSelectMenuInteraction,
-    registerButtonHandlers,
-} from "./buttons";
-import { registerCommands } from "./commands";
-import { registerForwardCleanupHandler } from "./events/forwardCleanup";
-import { dispatchModalInteraction, registerModalHandlers } from "./modals";
-import {
-    cancelAllReminders,
-    restoreReminders,
-    saveReminders,
-    setClient,
-} from "./reminder";
-import type {
-    ButtonHandler,
-    Command,
-    ModalHandler,
-    SelectMenuHandler,
-} from "./types";
+import { Loader } from "./core/loader";
+import { Registry } from "./core/registry";
+import { reminderService } from "./features/remind/reminder-service";
 import { logger } from "./utils/logger";
-
-// discord.js の Client 型を拡張
-declare module "discord.js" {
-    interface Client {
-        commands: Collection<string, Command>;
-        buttonHandlers: Collection<string, ButtonHandler>;
-        modalHandlers: Collection<string, ModalHandler>;
-        selectMenuHandlers: Collection<string, SelectMenuHandler>;
-    }
-}
 
 // Discord クライアントを作成
 const client = new Client({
@@ -48,85 +21,91 @@ const client = new Client({
     ],
 });
 
-// コマンド、ボタン、モーダルハンドラーを登録
-client.commands = new Collection();
-client.buttonHandlers = new Collection();
-client.modalHandlers = new Collection();
-client.selectMenuHandlers = new Collection();
-registerCommands(client);
-registerButtonHandlers(client);
-registerModalHandlers(client);
-registerForwardCleanupHandler(client);
+// レジストリとローダーの初期化
+const registry = new Registry();
+const loader = new Loader(registry);
 
-// Bot起動時（v15対応: ready → clientReady）
-client.once("clientReady", () => {
+// Bot起動時
+client.once("clientReady", async () => {
     logger.info(`✅ ${client.user?.tag} がオンラインになりました！`);
+
+    // 機能（Features）の読み込み
+    const featuresPath = join(__dirname, "features");
+    await loader.loadFeatures(featuresPath);
+
     logger.info(`🤖 ${client.guilds.cache.size} サーバーに接続中`);
 
-    // リマインダーにクライアントを設定し、保存されたリマインダーを復元
-    setClient(client);
-    restoreReminders();
+    // リマインダーサービスの初期化
+    reminderService.setClient(client);
+    await reminderService.restoreFromJson();
 });
 
 // スラッシュコマンド実行時
 client.on("interactionCreate", async (interaction) => {
-    // ボタンクリック処理（レジストリベースでディスパッチ）
-    if (interaction.isButton()) {
-        await dispatchButtonInteraction(interaction);
-        return;
-    }
-
-    // Select Menu処理（レジストリベースでディスパッチ）
-    if (interaction.isAnySelectMenu()) {
-        await dispatchSelectMenuInteraction(interaction);
-        return;
-    }
-
-    // モーダル送信処理（レジストリベースでディスパッチ）
-    if (interaction.isModalSubmit()) {
-        await dispatchModalInteraction(interaction);
-        return;
-    }
-
-    if (!interaction.isChatInputCommand()) return;
-
-    const command = client.commands.get(interaction.commandName);
-    if (!command) {
-        logger.error(`コマンド ${interaction.commandName} が見つかりません`);
-        return;
-    }
-
     try {
-        await command.execute(interaction as ChatInputCommandInteraction);
-    } catch (error) {
-        logger.error("コマンド実行エラー:", error);
-        const reply: InteractionReplyOptions = {
-            content: "コマンドの実行中にエラーが発生しました。",
-            flags: MessageFlags.Ephemeral,
-        };
-
-        try {
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp(reply);
-            } else {
-                await interaction.reply(reply);
+        if (interaction.isButton()) {
+            const result = registry.resolveButtonHandler(interaction.customId);
+            if (result) {
+                await result.handler.execute(interaction, result.args);
             }
-        } catch (e) {
-            // Unknown interaction などで返信できない場合はログに出して無視
-            logger.error("エラーメッセージの送信に失敗しました:\n", e);
+            return;
+        }
+
+        if (interaction.isAnySelectMenu()) {
+            const result = registry.resolveSelectMenuHandler(
+                interaction.customId,
+            );
+            if (result) {
+                await result.handler.execute(interaction, result.args);
+            }
+            return;
+        }
+
+        if (interaction.isModalSubmit()) {
+            const result = registry.resolveModalHandler(interaction.customId);
+            if (result) {
+                await result.handler.execute(interaction, result.args);
+            }
+            return;
+        }
+
+        if (interaction.isChatInputCommand()) {
+            const command = registry.commands.get(interaction.commandName);
+            if (!command) {
+                logger.error(
+                    `コマンド ${interaction.commandName} が見つかりません`,
+                );
+                return;
+            }
+            await command.execute(interaction);
+        }
+    } catch (error) {
+        logger.error("❌ インタラクション実行エラー:", error);
+        if (
+            interaction.isRepliable() &&
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+            const reply: InteractionReplyOptions = {
+                content: "エラーが発生しました。",
+                flags: MessageFlags.Ephemeral,
+            };
+            await interaction.reply(reply);
         }
     }
 });
 
-// Graceful shutdown（Ctrl+C でオフライン表示を即座に反映）
+// Graceful shutdown
 let isShuttingDown = false;
 const shutdown = () => {
     if (isShuttingDown) return;
     isShuttingDown = true;
     logger.info("🛑 Botをシャットダウン中...");
-    // リマインダーを保存してタスクを停止
-    saveReminders();
-    cancelAllReminders();
+
+    // サービスのクリーンアップなどあればここで行う
+    // reminderService は現状メモリ上のタスクをクリアするか？
+    // DBベースなので基本的には永続化されているが、実行中タスクのキャンセルなどは必要かも？
+
     client.destroy().then(() => {
         logger.info("👋 オフラインになりました");
         process.exit(0);
@@ -136,5 +115,4 @@ const shutdown = () => {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
-// ログイン（Bunは.envを自動で読み込む）
-client.login(Bun.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN);
