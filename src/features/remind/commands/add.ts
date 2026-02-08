@@ -2,12 +2,11 @@ import {
     type ChatInputCommandInteraction,
     MessageFlags,
     SlashCommandBuilder,
-    TextChannel,
 } from "discord.js";
-import { parseFutureDateTime } from "../../../lib/parser/date-parser";
 import type { Command } from "../../../core/types";
-import { reminderService } from "../reminder-service";
+import { parseFutureDateTime } from "../../../lib/parser/date-parser";
 import { buildAddResponseEmbed } from "../components/embeds";
+import { reminderService } from "../reminder-service";
 
 export const reminderAdd: Command = {
     data: new SlashCommandBuilder()
@@ -62,12 +61,7 @@ export const reminderAdd: Command = {
         if (reminder) {
             // リプライ（自分だけに見える）
             await interaction.reply({
-                embeds: [
-                    buildAddResponseEmbed(
-                        reminder,
-                        interaction.channel as TextChannel,
-                    ),
-                ],
+                embeds: [buildAddResponseEmbed(reminder, date)],
                 // components: [buildReminderButtons(reminder.id)], // ボタンはリスト表示だけで良いかも？またはキャンセルボタンだけつける？
                 // デザイン変更案：登録完了時はシンプルに。詳細はEmbedに。
                 flags: MessageFlags.Ephemeral,

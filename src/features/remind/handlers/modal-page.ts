@@ -1,11 +1,9 @@
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import type { ModalHandler } from "../../../core/types";
 import { logger } from "../../../utils/logger";
-import { decodeState } from "../utils/list";
-import {
-    LIST_PAGE_JUMP_PREFIX,
-} from "../constants";
+import { LIST_PAGE_JUMP_PREFIX } from "../constants";
 import { renderReminderList } from "../services/renderer";
+import { decodeState } from "../utils/list";
 
 export const pageJumpModalHandler: ModalHandler = {
     idPrefix: LIST_PAGE_JUMP_PREFIX,

@@ -119,7 +119,10 @@ export class ReminderService {
         id: string,
         userId: string,
         guildId?: string,
-    ): Promise<{ success: true; reminder: Reminder } | { success: false; reason: string }> {
+    ): Promise<
+        | { success: true; reminder: Reminder }
+        | { success: false; reason: string }
+    > {
         try {
             const reminder = await this.repository.findById(id);
             if (!reminder) return { success: false, reason: "not_found" };
@@ -222,7 +225,9 @@ export class ReminderService {
         // 再取得して、存在し変更されていないことを確認
         const fresh = await this.repository.findById(reminder.id);
         if (!fresh) {
-            logger.warn(`⚠️ リマインダー ${reminder.id} が見つかりません (削除済み?)`);
+            logger.warn(
+                `⚠️ リマインダー ${reminder.id} が見つかりません (削除済み?)`,
+            );
             return;
         }
 
@@ -261,7 +266,9 @@ export class ReminderService {
                     }
                 }
             } else {
-                logger.error(`❌ チャンネルが見つかりません: ${fresh.channelId}`);
+                logger.error(
+                    `❌ チャンネルが見つかりません: ${fresh.channelId}`,
+                );
             }
         } catch (error) {
             logger.error(`❌ 送信エラー (${fresh.id}):`, error);
@@ -270,8 +277,6 @@ export class ReminderService {
         // 実行後にDBから削除
         await this.forceCancel(fresh.id);
     }
-
-
 
     public async getReminderById(id: string): Promise<Reminder | null> {
         return this.repository.findById(id);

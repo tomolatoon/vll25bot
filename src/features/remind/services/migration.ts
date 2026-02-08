@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, renameSync } from "node:fs";
-import { logger } from "../../../utils/logger";
 import { REMINDER_FILE_PATH } from "../../../constants";
 import { ReminderRepository } from "../../../db/repositories/reminder-repository";
+import { logger } from "../../../utils/logger";
 import type { ReminderData } from "../types";
 
 export class MigrationService {
@@ -18,7 +18,7 @@ export class MigrationService {
             })[];
             let count = 0;
             const now = Date.now();
-            
+
             const repository = new ReminderRepository();
 
             for (const item of oldData) {

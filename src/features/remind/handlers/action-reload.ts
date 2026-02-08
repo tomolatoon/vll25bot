@@ -1,19 +1,12 @@
-import {
-    type ButtonInteraction,
-    EmbedBuilder,
-} from "discord.js";
+import { type ButtonInteraction, EmbedBuilder } from "discord.js";
 import type { ButtonHandler } from "../../../core/types";
-import { reminderService } from "../reminder-service";
-import {
-    REMIND_COLOR_INFO,
-} from "../constants";
-import {
-    buildReminderButtons,
-} from "../components/actions";
+import { buildReminderButtons } from "../components/actions";
 import {
     buildReminderDetailEmbed,
     buildReminderEmbed,
 } from "../components/embeds";
+import { REMIND_COLOR_INFO } from "../constants";
+import { reminderService } from "../reminder-service";
 
 export const reloadHandler: ButtonHandler = {
     idPrefix: "remind_reload:",

@@ -1,7 +1,4 @@
-import {
-    type ButtonInteraction,
-    MessageFlags,
-} from "discord.js";
+import { type ButtonInteraction, MessageFlags } from "discord.js";
 import type { ButtonHandler } from "../../../core/types";
 
 export const copyIdHandler: ButtonHandler = {

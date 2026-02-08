@@ -5,10 +5,10 @@ import {
     SlashCommandBuilder,
 } from "discord.js";
 import type { Command } from "../../../core/types";
-import { reminderService } from "../reminder-service";
 import { buildReminderButtons } from "../components/actions";
 import { buildReminderDetailEmbed } from "../components/embeds";
 import { REMIND_COLOR_INFO } from "../constants";
+import { reminderService } from "../reminder-service";
 
 export const reminderShow: Command = {
     data: new SlashCommandBuilder()
@@ -31,7 +31,9 @@ export const reminderShow: Command = {
                 embeds: [
                     new EmbedBuilder()
                         .setColor(REMIND_COLOR_INFO)
-                        .setDescription("❌ 指定されたIDのリマインダーが見つかりません。"),
+                        .setDescription(
+                            "❌ 指定されたIDのリマインダーが見つかりません。",
+                        ),
                 ],
                 flags: MessageFlags.Ephemeral,
             });

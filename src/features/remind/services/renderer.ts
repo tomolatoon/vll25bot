@@ -1,28 +1,26 @@
 import {
-    ActionRowBuilder,
+    type ActionRowBuilder,
     type ButtonInteraction,
+    type MessageActionRowComponentBuilder,
     MessageFlags,
     type ModalSubmitInteraction,
     type StringSelectMenuInteraction,
 } from "discord.js";
-import { reminderService } from "../reminder-service";
 import { logger } from "../../../utils/logger";
-import {
-    type ListState,
-    filterAndSortReminders,
-    getPageItems,
-    getTotalPages,
-} from "../utils/list";
-import { buildListEmbed } from "../components/embeds";
 import {
     buildActionButtons,
     buildOtherNavButtons,
     buildPaginationButtons,
     buildSelectMenu,
 } from "../components/actions";
+import { buildListEmbed } from "../components/embeds";
+import { reminderService } from "../reminder-service";
 import {
-    LIST_SELECT_PREFIX,
-} from "../constants";
+    type ListState,
+    filterAndSortReminders,
+    getPageItems,
+    getTotalPages,
+} from "../utils/list";
 
 /**
  * リマインダー一覧を描画・更新する
@@ -40,7 +38,9 @@ export async function renderReminderList(
     if (!interaction.guildId) return;
 
     try {
-        const allReminders = await reminderService.getByGuild(interaction.guildId);
+        const allReminders = await reminderService.getByGuild(
+            interaction.guildId,
+        );
         const filtered = filterAndSortReminders(allReminders, state);
         const totalPages = getTotalPages(filtered.length);
 
@@ -51,7 +51,8 @@ export async function renderReminderList(
 
         const embed = buildListEmbed(pageItems, state, totalPages);
 
-        const components: ActionRowBuilder<any>[] = [];
+        const components: ActionRowBuilder<MessageActionRowComponentBuilder>[] =
+            [];
         if (pageItems.length > 0) {
             components.push(buildSelectMenu(pageItems, state, selectedId));
             components.push(buildActionButtons(state, selectedId));

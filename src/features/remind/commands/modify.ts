@@ -3,10 +3,10 @@ import {
     MessageFlags,
     SlashCommandBuilder,
 } from "discord.js";
-import { parseFutureDateTime } from "../../../lib/parser/date-parser";
 import type { Command } from "../../../core/types";
-import { reminderService } from "../reminder-service";
+import { parseFutureDateTime } from "../../../lib/parser/date-parser";
 import { buildUpdateResponseEmbed } from "../components/embeds";
+import { reminderService } from "../reminder-service";
 import { validateReminderForUpdate } from "../utils/validation";
 
 export const reminderModify: Command = {
@@ -72,7 +72,9 @@ export const reminderModify: Command = {
                 return;
             }
             if (date <= new Date()) {
-                await interaction.editReply("❌ 未来の日時を指定してください。");
+                await interaction.editReply(
+                    "❌ 未来の日時を指定してください。",
+                );
                 return;
             }
             updates.remindAt = date.getTime();
@@ -86,7 +88,9 @@ export const reminderModify: Command = {
                     buildUpdateResponseEmbed(
                         updated,
                         updates.message,
-                        updates.remindAt ? new Date(updates.remindAt) : undefined,
+                        updates.remindAt
+                            ? new Date(updates.remindAt)
+                            : undefined,
                         undefined, // Channel ID change not supported in command yet
                     ),
                 ],

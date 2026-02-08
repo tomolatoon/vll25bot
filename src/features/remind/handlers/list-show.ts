@@ -1,10 +1,10 @@
 import { type ButtonInteraction, MessageFlags } from "discord.js";
 import type { ButtonHandler } from "../../../core/types";
-import { reminderService } from "../reminder-service";
-import { decodeState } from "../utils/list";
-import { LIST_SHOW_PREFIX } from "../constants";
 import { buildReminderButtons } from "../components/actions";
 import { buildReminderDetailEmbed } from "../components/embeds";
+import { LIST_SHOW_PREFIX } from "../constants";
+import { reminderService } from "../reminder-service";
+import { decodeState } from "../utils/list";
 
 export const listShowHandler: ButtonHandler = {
     idPrefix: LIST_SHOW_PREFIX,

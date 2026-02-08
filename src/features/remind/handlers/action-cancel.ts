@@ -1,22 +1,13 @@
-import {
-    type ButtonInteraction,
-    MessageFlags,
-} from "discord.js";
+import { type ButtonInteraction, MessageFlags } from "discord.js";
 import type { ButtonHandler } from "../../../core/types";
+import { buildCancelledButtons } from "../components/actions";
+import { buildCancelEmbed } from "../components/embeds";
+import { BUTTON_ID_REMIND_CANCEL } from "../constants";
 import { reminderService } from "../reminder-service";
 import { validateReminderForUpdate } from "../utils/validation";
-import {
-    BUTTON_ID_REMIND_CANCEL,
-} from "../constants";
-import {
-    buildCancelEmbed,
-} from "../components/embeds";
-import {
-    buildCancelledButtons,
-} from "../components/actions";
 
 export const cancelHandler: ButtonHandler = {
-    idPrefix: BUTTON_ID_REMIND_CANCEL + ":",
+    idPrefix: `${BUTTON_ID_REMIND_CANCEL}:`,
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
         const reminderId = interaction.customId.split(":")[1];
@@ -58,9 +49,7 @@ export const cancelHandler: ButtonHandler = {
                     );
                     await message.edit({
                         embeds: [buildCancelEmbed(reminder)],
-                        components: [
-                            buildCancelledButtons(reminder.id),
-                        ],
+                        components: [buildCancelledButtons(reminder.id)],
                     });
                 }
             } catch (error) {

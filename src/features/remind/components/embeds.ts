@@ -1,12 +1,12 @@
 import { EmbedBuilder } from "discord.js";
-import type { Reminder } from "../types";
-import { type ListState } from "../utils/list";
 import {
-    REMIND_COLOR_SUCCESS,
-    REMIND_COLOR_WARN,
     REMIND_COLOR_ERROR,
     REMIND_COLOR_INFO,
+    REMIND_COLOR_SUCCESS,
+    REMIND_COLOR_WARN,
 } from "../constants";
+import type { Reminder } from "../types";
+import type { ListState } from "../utils/list";
 
 /**
  * リマインダー登録完了のEmbedを生成
@@ -185,13 +185,11 @@ export function buildCancelEmbed(reminder: Reminder): EmbedBuilder {
         .setColor(REMIND_COLOR_ERROR)
         .setTitle("🗑️ このリマインダーは解除されました")
         .setDescription(`${reminder.message}`)
-        .addFields(
-            {
-                name: "📅 日時",
-                value: `<t:${unixTime}:S>`,
-                inline: true,
-            },
-        )
+        .addFields({
+            name: "📅 日時",
+            value: `<t:${unixTime}:S>`,
+            inline: true,
+        })
         .addFields({
             name: "📢 チャンネル",
             value: `<#${reminder.channelId}>`,

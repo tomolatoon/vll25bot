@@ -6,13 +6,13 @@ import {
     TextInputStyle,
 } from "discord.js";
 import type { ButtonHandler } from "../../../core/types";
+import { LIST_NAV_PAGE_PREFIX, LIST_PAGE_JUMP_PREFIX } from "../constants";
 import { reminderService } from "../reminder-service";
 import {
     decodeState,
     filterAndSortReminders,
     getTotalPages,
 } from "../utils/list";
-import { LIST_NAV_PAGE_PREFIX, LIST_PAGE_JUMP_PREFIX } from "../constants";
 
 export const listPageHandler: ButtonHandler = {
     idPrefix: LIST_NAV_PAGE_PREFIX,

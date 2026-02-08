@@ -6,12 +6,12 @@ import {
 import type { Command } from "../../../core/types";
 import { reminderService } from "../reminder-service";
 
+import { renderReminderList } from "../services/renderer";
 import {
     filterAndSortReminders,
     getTotalPages,
     paginateReminders,
 } from "../utils/list";
-import { renderReminderList } from "../services/renderer";
 
 export const reminderList: Command = {
     data: new SlashCommandBuilder()

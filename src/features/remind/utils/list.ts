@@ -87,7 +87,7 @@ export function getNextState(
     customId: string,
 ): ListState {
     const nextState = { ...currentState };
-    
+
     // customIdに含まれるアクションキーワードに基づいて次の状態を決定する
     // note: 本来は定数を使用すべきだが、循環参照回避と簡易実装のため文字列判定を行っている
     if (customId.includes("_nav_prev")) {

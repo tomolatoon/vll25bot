@@ -1,13 +1,11 @@
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import type { ModalHandler } from "../../../core/types";
-import { reminderService } from "../reminder-service";
-import {
-    buildReminderButtons,
-} from "../components/actions";
+import { buildReminderButtons } from "../components/actions";
 import {
     buildReminderEmbed,
     buildUpdateResponseEmbed,
-} from "../components/embeds"; 
+} from "../components/embeds";
+import { reminderService } from "../reminder-service";
 import { buildChangesArray, validateDateTimeInput } from "../utils/validation";
 
 // NOTE: ui-exports is temporary, I should import from individual files if ui-exports doesn't work or if I want to be clean.
@@ -34,7 +32,7 @@ const editModalHandler: ModalHandler = {
 
         // 変更内容を特定するために元のデータを取得
         const original = await reminderService.getReminderById(reminderId);
-        
+
         // 更新
         const updated = await reminderService.update(reminderId, {
             message: newMessage,
@@ -53,7 +51,11 @@ const editModalHandler: ModalHandler = {
         // 変更内容のリスト作成
         const changes = buildChangesArray({
             message: original.message !== newMessage ? newMessage : undefined,
-            remindAt: original.remindAt !== (dateValidation.date?.getTime() ?? original.remindAt) ? dateValidation.date : undefined,
+            remindAt:
+                original.remindAt !==
+                (dateValidation.date?.getTime() ?? original.remindAt)
+                    ? dateValidation.date
+                    : undefined,
         });
 
         // 元のメッセージを更新（ID表示など）
@@ -76,10 +78,7 @@ const editModalHandler: ModalHandler = {
             }
         }
 
-        const responseEmbed = buildUpdateResponseEmbed(
-            updated,
-            changes,
-        );
+        const responseEmbed = buildUpdateResponseEmbed(updated, changes);
 
         await interaction.reply({
             embeds: [responseEmbed],

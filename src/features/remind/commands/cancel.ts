@@ -4,8 +4,8 @@ import {
     SlashCommandBuilder,
 } from "discord.js";
 import type { Command } from "../../../core/types";
-import { reminderService } from "../reminder-service";
 import { buildCancelSuccessEmbed } from "../components/embeds";
+import { reminderService } from "../reminder-service";
 
 export const reminderCancel: Command = {
     data: new SlashCommandBuilder()
