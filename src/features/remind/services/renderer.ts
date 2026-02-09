@@ -34,8 +34,10 @@ export async function renderReminderList(
     state: ListState,
     selectedId?: string,
 ): Promise<void> {
-    logger.info("🔍 renderReminderList called.");
-    if (!interaction.guildId) return;
+    if (!interaction.guildId) {
+        logger.warn("⚠️ renderReminderList: guildId が取得できません");
+        return;
+    }
 
     try {
         const allReminders = await reminderService.getByGuild(
@@ -80,9 +82,8 @@ export async function renderReminderList(
             // ボタンまたはセレクトメニュー
             await interaction.update(updateOptions);
         }
-        logger.info("✅ renderReminderList completed successfully");
     } catch (error) {
-        logger.error("❌ renderReminderList failed:", error);
+        logger.error("❌ renderReminderList: 処理中にエラーが発生しました", error);
         throw error;
     }
 }

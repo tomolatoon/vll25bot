@@ -1,9 +1,8 @@
-import { existsSync, readFileSync, renameSync } from "node:fs";
 import type { Client, TextChannel } from "discord.js";
-import { REMINDER_FILE_PATH } from "../../constants";
 import { ReminderRepository } from "../../db/repositories/reminder-repository";
 import { logger } from "../../utils/logger";
 import type { Reminder, ReminderData } from "./types";
+import { buildExecutedReminderEmbed } from "./components/embeds";
 
 export class ReminderService {
     private static instance: ReminderService;
@@ -164,7 +163,7 @@ export class ReminderService {
      */
     public async delete(id: string): Promise<void> {
         await this.forceCancel(id);
-        logger.info(`🗑️ リマインダー削除 (delete called): ${id}`);
+        logger.info(`🗑️ リマインダーを削除しました: ${id}`);
     }
 
     private async checkReminders() {
@@ -252,10 +251,6 @@ export class ReminderService {
                                 await replyChannel.messages.fetch(
                                     fresh.replyMessageId,
                                 );
-                            // 循環参照を避けるために動的インポート
-                            const { buildExecutedReminderEmbed } = await import(
-                                "./utils/ui"
-                            );
                             await replyMessage.edit({
                                 embeds: [buildExecutedReminderEmbed(fresh)],
                                 components: [],

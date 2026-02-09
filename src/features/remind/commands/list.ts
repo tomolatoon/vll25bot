@@ -1,52 +1,93 @@
 import {
+    ActionRowBuilder,
+    ChannelType,
     type ChatInputCommandInteraction,
     MessageFlags,
-    SlashCommandBuilder,
+    SlashCommandSubcommandBuilder,
+    type TextChannel,
 } from "discord.js";
-import type { Command } from "../../../core/types";
 import { reminderService } from "../reminder-service";
-
-import { renderReminderList } from "../services/renderer";
 import {
+    type ListState,
+    type SortOrder,
     filterAndSortReminders,
+    getPageItems,
     getTotalPages,
-    paginateReminders,
 } from "../utils/list";
+import {
+    buildActionButtons,
+    buildOtherNavButtons,
+    buildPaginationButtons,
+    buildSelectMenu,
+} from "../components/actions";
+import { buildListEmbed } from "../components/embeds";
 
-export const reminderList: Command = {
-    data: new SlashCommandBuilder()
-        .setName("list")
-        .setDescription("登録済みリマインダー一覧を表示します")
-        .addIntegerOption((option) =>
-            option
-                .setName("page")
-                .setDescription("表示するページ番号")
-                .setRequired(false)
-                .setMinValue(1),
-        ),
-    async execute(interaction: ChatInputCommandInteraction) {
-        if (!interaction.guildId) return;
+const data = new SlashCommandSubcommandBuilder()
+    .setName("list")
+    .setDescription("リマインダー一覧を表示します")
+    .addChannelOption((option) =>
+        option
+            .setName("channel")
+            .setDescription("送信先チャンネル（省略で全チャンネル）")
+            .addChannelTypes(ChannelType.GuildText)
+            .setRequired(false),
+    )
+    .addUserOption((option) =>
+        option
+            .setName("user")
+            .setDescription("作成者（省略で自分のみ）")
+            .setRequired(false),
+    )
+    .addStringOption((option) =>
+        option
+            .setName("order")
+            .setDescription("ソート順（省略で昇順）")
+            .setRequired(false)
+            .addChoices(
+                { name: "昇順（古い順）", value: "asc" },
+                { name: "降順（新しい順）", value: "desc" },
+            ),
+    );
 
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+async function execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction.guildId) return;
 
-        // 全件取得
-        const reminders = await reminderService.getByGuild(interaction.guildId);
+    const targetChannel = interaction.options.getChannel(
+        "channel",
+    ) as TextChannel | null;
+    const targetUser = interaction.options.getUser("user");
+    const order =
+        (interaction.options.getString("order") as SortOrder | null) || "asc";
 
-        if (reminders.length === 0) {
-            await interaction.editReply("📭 リマインダーはありません。");
-            return;
-        }
+    const state: ListState = {
+        page: 0,
+        order,
+        channelId: targetChannel?.id,
+        userId: targetUser?.id ?? interaction.user.id,
+        guildId: interaction.guildId,
+    };
 
-        // 初期状態
-        const page = (interaction.options.getInteger("page") || 1) - 1;
-        const totalPages = getTotalPages(reminders.length);
-        const safePage = Math.max(0, Math.min(page, totalPages - 1));
+    const allReminders = await reminderService.getByGuild(interaction.guildId);
+    const filtered = filterAndSortReminders(allReminders, state);
+    const totalPages = getTotalPages(filtered.length);
+    const pageItems = getPageItems(filtered, state.page);
 
-        const state = {
-            page: safePage,
-            sort: "date_asc" as const,
-        };
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        await renderReminderList(interaction, state);
-    },
-};
+    const embed = buildListEmbed(pageItems, state, totalPages);
+
+    const components: ActionRowBuilder<any>[] = [];
+    if (pageItems.length > 0) {
+        components.push(buildSelectMenu(pageItems, state));
+        components.push(buildActionButtons(state));
+    }
+    components.push(buildPaginationButtons(state, totalPages));
+    components.push(buildOtherNavButtons(state));
+
+    await interaction.editReply({
+        embeds: [embed],
+        components: components,
+    });
+}
+
+export default { data, execute };

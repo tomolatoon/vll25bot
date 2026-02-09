@@ -1,3 +1,5 @@
+import { logger } from "../../../utils/logger";
+import { LIST_NAV_NEXT_PREFIX, LIST_NAV_PREV_PREFIX, LIST_ORDER_PREFIX, LIST_PREFIXES } from "../constants";
 import type { Reminder } from "../types";
 
 export const REMINDERS_PER_PAGE = 5;
@@ -87,15 +89,17 @@ export function getNextState(
     customId: string,
 ): ListState {
     const nextState = { ...currentState };
+    const prefix = customId.split(":")[0];
 
     // customIdに含まれるアクションキーワードに基づいて次の状態を決定する
-    // note: 本来は定数を使用すべきだが、循環参照回避と簡易実装のため文字列判定を行っている
-    if (customId.includes("_nav_prev")) {
+    if (prefix === LIST_NAV_PREV_PREFIX) {
         nextState.page = Math.max(0, nextState.page - 1);
-    } else if (customId.includes("_nav_next")) {
+    } else if (prefix === LIST_NAV_NEXT_PREFIX) {
         nextState.page++;
-    } else if (customId.includes("_order")) {
+    } else if (prefix === LIST_ORDER_PREFIX) {
         nextState.order = nextState.order === "asc" ? "desc" : "asc";
+    }else if(!Object.hasOwn(LIST_PREFIXES, prefix)){
+        logger.warn(`⚠️ getNextState: 不明なリストの操作です: customId=${customId}`);
     }
 
     return nextState;

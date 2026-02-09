@@ -1,50 +1,75 @@
 import {
     type ChatInputCommandInteraction,
     MessageFlags,
-    SlashCommandBuilder,
+    SlashCommandSubcommandBuilder,
 } from "discord.js";
-import type { Command } from "../../../core/types";
-import { buildCancelSuccessEmbed } from "../components/embeds";
 import { reminderService } from "../reminder-service";
+import { buildCancelEmbed } from "../components/embeds";
+import { buildCancelSuccessEmbed } from "../components/embeds";
+import { buildCancelledButtons } from "../components/actions";
 
-export const reminderCancel: Command = {
-    data: new SlashCommandBuilder()
-        .setName("cancel")
-        .setDescription("リマインダーを解除（削除）します")
-        .addStringOption((option) =>
-            option
-                .setName("id")
-                .setDescription("リマインダーID")
-                .setRequired(true),
-        ),
-    async execute(interaction: ChatInputCommandInteraction) {
-        const id = interaction.options.getString("id", true);
+const data = new SlashCommandSubcommandBuilder()
+    .setName("cancel")
+    .setDescription("リマインダーを解除します")
+    .addStringOption((option) =>
+        option
+            .setName("id")
+            .setDescription("解除するリマインダーのID")
+            .setRequired(true),
+    );
 
-        const result = await reminderService.cancel(
-            id,
-            interaction.user.id,
-            interaction.guildId || undefined,
-        );
+async function execute(interaction: ChatInputCommandInteraction) {
+    const id = interaction.options.getString("id", true);
+    if (!interaction.guildId) return;
 
-        if (result.success) {
-            await interaction.reply({
-                embeds: [buildCancelSuccessEmbed(result.reminder)],
-                flags: MessageFlags.Ephemeral,
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const result = await reminderService.cancel(
+        id,
+        interaction.user.id,
+        interaction.guildId,
+    );
+
+    if (!result.success) {
+        if (result.reason === "not_owner") {
+            await interaction.editReply({
+                content: "❌ 自分が登録したリマインダーのみ解除できます。",
             });
         } else {
-            const reason =
-                result.reason === "not_found"
-                    ? "リマインダーが見つかりません。"
-                    : result.reason === "not_owner"
-                      ? "自分が登録したリマインダーのみ解除できます。"
-                      : result.reason === "wrong_guild"
-                        ? "このサーバーのリマインダーではありません。"
-                        : "解除に失敗しました。";
-
-            await interaction.reply({
-                content: `❌ ${reason}`,
-                flags: MessageFlags.Ephemeral,
+            await interaction.editReply({
+                content: `❓ リマインダー \`${id}\` は既に解除済みか存在しません。`,
             });
         }
-    },
-};
+        return;
+    }
+
+    const { reminder } = result;
+
+    // 元のメッセージを「キャンセル済み」に更新
+    if (reminder.replyMessageId && reminder.replyChannelId) {
+        try {
+            const channel = await interaction.client.channels.fetch(
+                reminder.replyChannelId,
+            );
+            if (channel?.isTextBased()) {
+                const message = await channel.messages.fetch(
+                    reminder.replyMessageId,
+                );
+
+                await message.edit({
+                    embeds: [buildCancelEmbed(reminder)],
+                    components: [buildCancelledButtons(reminder.id)],
+                });
+            }
+        } catch (error) {
+            // メッセージが見つからない場合などは無視
+        }
+    }
+
+    // 完了レスポンス
+    await interaction.editReply({
+        embeds: [buildCancelSuccessEmbed(reminder)],
+    });
+}
+
+export default { data, execute };
