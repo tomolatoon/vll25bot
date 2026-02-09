@@ -20,12 +20,13 @@
 
 ### 📚 管理者向け
 
-- [セットアップガイド](docs/setup.md)
+- [セットアップガイド](docs/operation/setup.md)
 
 ### 🛠 開発者向け
 
+管理者向けドキュメントも見ておくとよいでしょう．
+
 - **[CONTRIBUTING](docs/CONTRIBUTING.md)**
-- [セットアップガイド](docs/setup.md)
 - [開発ガイド (ディレクトリ構成・ルール)](docs/development/index.md)
 
 ## バージョン

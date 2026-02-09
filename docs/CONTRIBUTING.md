@@ -2,7 +2,7 @@
 
 ## 📚 ドキュメント構成
 
-### 1. [環境構築とデプロイ (Setup)](setup.md)
+### 1. [環境構築とデプロイ (Setup)](operation/setup.md)
 - 開発環境のセットアップ方法 (`bun install`)
 - `.env` の設定
 - Discord Developer Portal での Bot 作成手順
