@@ -1,11 +1,18 @@
 import {
-    ActionRowBuilder,
+    type ActionRowBuilder,
     ChannelType,
     type ChatInputCommandInteraction,
     MessageFlags,
     SlashCommandSubcommandBuilder,
     type TextChannel,
 } from "discord.js";
+import {
+    buildActionButtons,
+    buildOtherNavButtons,
+    buildPaginationButtons,
+    buildSelectMenu,
+} from "../components/actions";
+import { buildListEmbed } from "../components/embeds";
 import { reminderService } from "../reminder-service";
 import {
     type ListState,
@@ -14,13 +21,6 @@ import {
     getPageItems,
     getTotalPages,
 } from "../utils/list";
-import {
-    buildActionButtons,
-    buildOtherNavButtons,
-    buildPaginationButtons,
-    buildSelectMenu,
-} from "../components/actions";
-import { buildListEmbed } from "../components/embeds";
 
 const data = new SlashCommandSubcommandBuilder()
     .setName("list")

@@ -3,10 +3,10 @@ import {
     MessageFlags,
     SlashCommandSubcommandBuilder,
 } from "discord.js";
-import { reminderService } from "../reminder-service";
+import { buildCancelledButtons } from "../components/actions";
 import { buildCancelEmbed } from "../components/embeds";
 import { buildCancelSuccessEmbed } from "../components/embeds";
-import { buildCancelledButtons } from "../components/actions";
+import { reminderService } from "../reminder-service";
 
 const data = new SlashCommandSubcommandBuilder()
     .setName("cancel")

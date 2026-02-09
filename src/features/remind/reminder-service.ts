@@ -1,8 +1,8 @@
 import type { Client, TextChannel } from "discord.js";
 import { ReminderRepository } from "../../db/repositories/reminder-repository";
 import { logger } from "../../utils/logger";
-import type { Reminder, ReminderData } from "./types";
 import { buildExecutedReminderEmbed } from "./components/embeds";
+import type { Reminder, ReminderData } from "./types";
 
 export class ReminderService {
     private static instance: ReminderService;

@@ -5,9 +5,12 @@ import {
     SlashCommandSubcommandBuilder,
     type TextChannel,
 } from "discord.js";
-import { reminderService } from "../reminder-service";
 import { buildReminderButtons } from "../components/actions";
-import { buildReminderEmbed, buildUpdateResponseEmbed } from "../components/embeds";
+import {
+    buildReminderEmbed,
+    buildUpdateResponseEmbed,
+} from "../components/embeds";
+import { reminderService } from "../reminder-service";
 import {
     buildChangesArray,
     validateDateTimeInput,

@@ -83,7 +83,10 @@ export async function renderReminderList(
             await interaction.update(updateOptions);
         }
     } catch (error) {
-        logger.error("❌ renderReminderList: 処理中にエラーが発生しました", error);
+        logger.error(
+            "❌ renderReminderList: 処理中にエラーが発生しました",
+            error,
+        );
         throw error;
     }
 }

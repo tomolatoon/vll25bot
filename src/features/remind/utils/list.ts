@@ -1,5 +1,10 @@
 import { logger } from "../../../utils/logger";
-import { LIST_NAV_NEXT_PREFIX, LIST_NAV_PREV_PREFIX, LIST_ORDER_PREFIX, LIST_PREFIXES } from "../constants";
+import {
+    LIST_NAV_NEXT_PREFIX,
+    LIST_NAV_PREV_PREFIX,
+    LIST_ORDER_PREFIX,
+    LIST_PREFIXES,
+} from "../constants";
 import type { Reminder } from "../types";
 
 export const REMINDERS_PER_PAGE = 5;
@@ -98,8 +103,10 @@ export function getNextState(
         nextState.page++;
     } else if (prefix === LIST_ORDER_PREFIX) {
         nextState.order = nextState.order === "asc" ? "desc" : "asc";
-    }else if(!Object.hasOwn(LIST_PREFIXES, prefix)){
-        logger.warn(`⚠️ getNextState: 不明なリストの操作です: customId=${customId}`);
+    } else if (!Object.hasOwn(LIST_PREFIXES, prefix)) {
+        logger.warn(
+            `⚠️ getNextState: 不明なリストの操作です: customId=${customId}`,
+        );
     }
 
     return nextState;

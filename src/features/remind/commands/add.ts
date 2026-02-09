@@ -6,9 +6,9 @@ import {
     type TextChannel,
 } from "discord.js";
 import { parseFutureDateTime } from "../../../lib/parser/date-parser";
-import { reminderService } from "../reminder-service";
 import { buildReminderButtons } from "../components/actions";
 import { buildReminderEmbed } from "../components/embeds";
+import { reminderService } from "../reminder-service";
 
 const data = new SlashCommandSubcommandBuilder()
     .setName("add")
