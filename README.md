@@ -28,5 +28,11 @@
 - [セットアップガイド](docs/setup.md)
 - [開発ガイド (ディレクトリ構成・ルール)](docs/development/index.md)
 
+## バージョン
+
+v2.0.0 (2026/02/10)
+
+- [バージョン履歴はこちらから](docs/history.md)
+
 ## ライセンス
 Apache License 2.0
