@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import {
     type ActionRowBuilder,
     type ButtonBuilder,
@@ -52,47 +53,60 @@ const data = new SlashCommandSubcommandBuilder()
     );
 
 async function execute(interaction: ChatInputCommandInteraction) {
-    if (!interaction.guildId) return;
+    try {
+        if (!interaction.guildId) return;
 
-    const targetChannel = interaction.options.getChannel(
-        "channel",
-    ) as TextChannel | null;
-    const targetUser = interaction.options.getUser("user");
-    const order =
-        (interaction.options.getString("order") as SortOrder | null) || "asc";
+        const targetChannel = interaction.options.getChannel(
+            "channel",
+        ) as TextChannel | null;
+        const targetUser = interaction.options.getUser("user");
+        const order =
+            (interaction.options.getString("order") as SortOrder | null) ||
+            "asc";
 
-    const state: ListState = {
-        page: 0,
-        order,
-        channelId: targetChannel?.id,
-        userId: targetUser?.id ?? interaction.user.id,
-        guildId: interaction.guildId,
-    };
+        const state: ListState = {
+            page: 0,
+            order,
+            channelId: targetChannel?.id,
+            userId: targetUser?.id ?? interaction.user.id,
+            guildId: interaction.guildId,
+        };
 
-    const allReminders = await reminderService.getByGuild(interaction.guildId);
-    const filtered = filterAndSortReminders(allReminders, state);
-    const totalPages = getTotalPages(filtered.length);
-    const pageItems = getPageItems(filtered, state.page);
+        const allReminders = await reminderService.getByGuild(
+            interaction.guildId,
+        );
+        const filtered = filterAndSortReminders(allReminders, state);
+        const totalPages = getTotalPages(filtered.length);
+        const pageItems = getPageItems(filtered, state.page);
 
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const embed = buildListEmbed(pageItems, state, totalPages);
+        const embed = buildListEmbed(pageItems, state, totalPages);
 
-    const components: (
-        | ActionRowBuilder<StringSelectMenuBuilder>
-        | ActionRowBuilder<ButtonBuilder>
-    )[] = [];
-    if (pageItems.length > 0) {
-        components.push(buildSelectMenu(pageItems, state));
-        components.push(buildActionButtons(state));
+        const components: (
+            | ActionRowBuilder<StringSelectMenuBuilder>
+            | ActionRowBuilder<ButtonBuilder>
+        )[] = [];
+        if (pageItems.length > 0) {
+            components.push(buildSelectMenu(pageItems, state));
+            components.push(buildActionButtons(state));
+        }
+        components.push(buildPaginationButtons(state, totalPages));
+        components.push(buildOtherNavButtons(state));
+
+        await interaction.editReply({
+            embeds: [embed],
+            components: components,
+        });
+    } catch (error) {
+        logger.error("❌ /remind list 実行エラー:", error);
+        const content = "❌ コマンドの実行中にエラーが発生しました。";
+        if (interaction.deferred || interaction.replied) {
+            await interaction.editReply({ content });
+        } else {
+            await interaction.reply({ content, flags: MessageFlags.Ephemeral });
+        }
     }
-    components.push(buildPaginationButtons(state, totalPages));
-    components.push(buildOtherNavButtons(state));
-
-    await interaction.editReply({
-        embeds: [embed],
-        components: components,
-    });
 }
 
 export default { data, execute };

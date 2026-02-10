@@ -4,7 +4,15 @@ import type {
     ModalHandler,
     SelectMenuHandler,
 } from "@core/types";
-import { Collection } from "discord.js";
+import { logger } from "@utils/logger";
+import { type Client, Collection } from "discord.js";
+
+/**
+ * フィーチャーのセットアップ関数の型
+ * @precondition client が ready 状態であること
+ * @postcondition フィーチャー固有の初期化処理が完了する
+ */
+export type FeatureSetup = (client: Client) => Promise<void>;
 
 export class Registry {
     public readonly commands = new Collection<string, Command>();
@@ -14,6 +22,7 @@ export class Registry {
         SelectMenuHandler
     >();
     public readonly modalHandlers = new Collection<string, ModalHandler>();
+    private readonly setupFns: FeatureSetup[] = [];
 
     public registerCommand(command: Command) {
         this.commands.set(command.data.name, command);
@@ -29,6 +38,30 @@ export class Registry {
 
     public registerModalHandler(handler: ModalHandler) {
         this.modalHandlers.set(handler.idPrefix, handler);
+    }
+
+    /**
+     * フィーチャーのセットアップ関数を登録する
+     * @param fn - clientReady 時に実行されるセットアップ関数
+     */
+    public registerSetup(fn: FeatureSetup) {
+        this.setupFns.push(fn);
+    }
+
+    /**
+     * 登録済みの全セットアップ関数を順次実行する
+     * @precondition client が ready 状態であること
+     * @postcondition 全フィーチャーの初期化が完了する
+     */
+    public async runSetups(client: Client): Promise<void> {
+        for (const fn of this.setupFns) {
+            try {
+                await fn(client);
+            } catch (error) {
+                logger.error("❌ フィーチャーセットアップエラー:", error);
+                throw error;
+            }
+        }
     }
 
     public resolveButtonHandler(

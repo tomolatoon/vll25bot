@@ -4,12 +4,14 @@
  * 重み付け抽選で運勢を表示。大吉・大凶は出にくい設定。
  */
 
+import { logger } from "@utils/logger";
 import {
     type ChatInputCommandInteraction,
     EmbedBuilder,
+    MessageFlags,
     SlashCommandBuilder,
 } from "discord.js";
-import type { Command, Fortune } from "../types";
+import type { Fortune } from "../types";
 
 // 運勢データ（結果, 絵文字, 色）
 const fortunes: Fortune[] = [
@@ -41,23 +43,36 @@ const data = new SlashCommandBuilder()
     .setDescription("おみくじを引きます");
 
 async function execute(interaction: ChatInputCommandInteraction) {
-    const fortune = drawFortune();
-    const today = new Date().toLocaleDateString("ja-JP", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
+    try {
+        const fortune = drawFortune();
+        const today = new Date().toLocaleDateString("ja-JP", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
 
-    const embed = new EmbedBuilder()
-        .setTitle(`${fortune.emoji} おみくじ ${fortune.emoji}`)
-        .setDescription(`# ${fortune.result}`)
-        .setColor(fortune.color)
-        .setFooter({
-            text: `${today}`,
-        })
-        .setTimestamp();
+        const embed = new EmbedBuilder()
+            .setTitle(`${fortune.emoji} おみくじ ${fortune.emoji}`)
+            .setDescription(`# ${fortune.result}`)
+            .setColor(fortune.color)
+            .setFooter({
+                text: `${today}`,
+            })
+            .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed] });
+    } catch (error) {
+        logger.error("❌ /omikuji 実行エラー:", error);
+        const content = "❌ コマンドの実行中にエラーが発生しました。";
+        if (interaction.deferred || interaction.replied) {
+            await interaction.editReply({ content });
+        } else {
+            await interaction.reply({
+                content,
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+    }
 }
 
 export default { data, execute };

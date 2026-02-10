@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, renameSync } from "node:fs";
 import { REMINDER_FILE_PATH } from "@/constants";
 import { ReminderRepository } from "@db/repositories/reminder-repository";
-import type { ReminderData } from "@features/remind/types";
 import { logger } from "@utils/logger";
+import type { ReminderData } from "../types";
 
 export class MigrationService {
     public async restoreFromJson(): Promise<number> {

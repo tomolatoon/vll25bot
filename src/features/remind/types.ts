@@ -1,20 +1,7 @@
-export interface Reminder {
-    id: string;
-    channelId: string;
-    message: string;
-    remindAt: number; // Unixタイムスタンプ (ミリ秒)
-    createdAt: number; // Unixタイムスタンプ (ミリ秒)
-    createdBy: string;
-    guildId: string;
-    replyMessageId?: string | null;
-    replyChannelId?: string | null;
-}
-
-export type ReminderData = Omit<Reminder, "id" | "createdAt">;
-
-export interface FilterOptions {
-    channelId?: string;
-    guildId?: string;
-    minRemindAt?: number;
-    maxRemindAt?: number;
-}
+/**
+ * remind フィーチャーの型定義
+ *
+ * DB関連の型は @db/types から再エクスポート。
+ * remind 固有の型はここに定義する。
+ */
+export type { FilterOptions, Reminder, ReminderData } from "@db/types";

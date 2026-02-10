@@ -2,12 +2,13 @@
  * kanwa.ts - 閑話休題コマンド
  */
 
+import { logger } from "@utils/logger";
 import {
     type ChatInputCommandInteraction,
+    MessageFlags,
     SlashCommandBuilder,
     type TextChannel,
 } from "discord.js";
-import type { Command } from "../types";
 
 const data = new SlashCommandBuilder()
     .setName("kanwa")
@@ -32,22 +33,35 @@ const data = new SlashCommandBuilder()
     );
 
 async function execute(interaction: ChatInputCommandInteraction) {
-    const useSpace = interaction.options.getInteger("space") ?? 0;
-    const reason = interaction.options.getString("reason");
-    const times = Math.min(interaction.options.getInteger("times") ?? 1, 5);
+    try {
+        const useSpace = interaction.options.getInteger("space") ?? 0;
+        const reason = interaction.options.getString("reason");
+        const times = Math.min(interaction.options.getInteger("times") ?? 1, 5);
 
-    const spaces = "　".repeat(useSpace); // 全角スペース
-    const message = `# 閑${spaces}話${spaces}休${spaces}題${
-        reason ? `\n-# ${reason}` : ""
-    }`;
+        const spaces = "　".repeat(useSpace); // 全角スペース
+        const message = `# 閑${spaces}話${spaces}休${spaces}題${
+            reason ? `\n-# ${reason}` : ""
+        }`;
 
-    // コマンドの応答を遅延させて削除（痕跡を消す）
-    await interaction.deferReply();
-    await interaction.deleteReply();
+        // コマンドの応答を遅延させて削除（痕跡を消す）
+        await interaction.deferReply();
+        await interaction.deleteReply();
 
-    const channel = interaction.channel as TextChannel;
-    for (let i = 0; i < times; i++) {
-        await channel.send(message);
+        const channel = interaction.channel as TextChannel;
+        for (let i = 0; i < times; i++) {
+            await channel.send(message);
+        }
+    } catch (error) {
+        logger.error("❌ /kanwa 実行エラー:", error);
+        const content = "❌ コマンドの実行中にエラーが発生しました。";
+        if (interaction.deferred || interaction.replied) {
+            await interaction.editReply({ content }).catch(() => {});
+        } else {
+            await interaction.reply({
+                content,
+                flags: MessageFlags.Ephemeral,
+            });
+        }
     }
 }
 

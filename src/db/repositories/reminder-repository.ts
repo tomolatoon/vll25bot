@@ -1,9 +1,5 @@
 import { db } from "@db/client";
-import type {
-    FilterOptions,
-    Reminder,
-    ReminderData,
-} from "@features/remind/types";
+import type { FilterOptions, Reminder, ReminderData } from "@db/types";
 import { logger } from "@utils/logger";
 import { v4 as uuidv4 } from "uuid";
 

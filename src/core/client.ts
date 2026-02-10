@@ -2,8 +2,6 @@ import { join } from "node:path";
 import { env } from "@config/env";
 import { Loader } from "@core/loader";
 import { Registry } from "@core/registry";
-import { migrationService } from "@features/remind/services/migration"; // Absolute path for core
-import { reminderService } from "@features/remind/services/reminder-service"; // Absolute path for core
 import { logger } from "@utils/logger";
 import {
     Client,
@@ -57,9 +55,8 @@ export class CustomClient extends Client {
             logger.info(`✅ ${this.user?.tag} がオンラインになりました！`);
             logger.info(`🤖 ${this.guilds.cache.size} サーバーに接続中`);
 
-            // リマインダーサービスの初期化 (from index.ts)
-            reminderService.setClient(this);
-            await migrationService.restoreFromJson();
+            // 各フィーチャーの setup を実行
+            await this.registry.runSetups(this);
         });
 
         this.on("interactionCreate", async (interaction) => {

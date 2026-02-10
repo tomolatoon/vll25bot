@@ -24,6 +24,21 @@ export class Loader {
     }
 
     private async loadFeature(featurePath: string) {
+        // セットアップスクリプトの検出・登録
+        const setupPath = join(featurePath, "setup.ts");
+        if (this.exists(setupPath)) {
+            try {
+                const mod = await import(setupPath);
+                const setupFn = mod.setup ?? mod.default?.setup ?? mod.default;
+                if (typeof setupFn === "function") {
+                    this.registry.registerSetup(setupFn);
+                    logger.info("📂 セットアップを登録しました");
+                }
+            } catch (error) {
+                logger.error(`❌ Failed to load setup ${setupPath}:`, error);
+            }
+        }
+
         // コマンドの読み込み
         const commandsPath = join(featurePath, "commands");
         if (this.exists(commandsPath)) {
