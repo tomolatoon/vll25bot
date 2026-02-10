@@ -1,5 +1,5 @@
 /**
- * forwardCleanup.ts - 転送メッセージのクリーンアップ処理
+ * forward-cleanup.ts - 転送メッセージのクリーンアップ処理
  *
  * 転送されたメッセージに付けられた🗑️リアクションを検出し、
  * そのメッセージを削除する機能を提供する
@@ -26,6 +26,8 @@ const DELETE_FORWARDED_MESSAGE_EMOJI = "🗑️";
  * - 🗑️ リアクションが追加された
  * - リアクションを追加したのが Bot 自身ではない
  *
+ * @precondition client が ready 状態であること
+ * @postcondition messageReactionAdd イベントリスナーが登録される
  * @param client - Discord クライアント
  */
 export function registerForwardCleanupHandler(client: Client): void {

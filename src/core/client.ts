@@ -8,6 +8,7 @@ import {
     GatewayIntentBits,
     type InteractionReplyOptions,
     MessageFlags,
+    Partials,
 } from "discord.js";
 
 export class CustomClient extends Client {
@@ -22,6 +23,7 @@ export class CustomClient extends Client {
                 GatewayIntentBits.GuildMessageReactions,
                 GatewayIntentBits.MessageContent,
             ],
+            partials: [Partials.Message, Partials.Reaction, Partials.Channel],
         });
 
         this.registry = new Registry();
