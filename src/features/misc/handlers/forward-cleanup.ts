@@ -6,16 +6,20 @@
  */
 
 import { logger } from "@utils/logger";
-import type {
-    Client,
-    MessageReaction,
-    PartialMessageReaction,
-    PartialUser,
-    User,
+import {
+    type Client,
+    DiscordAPIError,
+    type MessageReaction,
+    type PartialMessageReaction,
+    type PartialUser,
+    type User,
 } from "discord.js";
 
 /** 転送メッセージ削除用の絵文字 */
 const DELETE_FORWARDED_MESSAGE_EMOJI = "🗑️";
+
+/** Discord API エラーコード: Unknown Message */
+const DISCORD_ERROR_UNKNOWN_MESSAGE = 10008;
 
 /**
  * 転送メッセージのクリーンアップイベントハンドラーを登録する
@@ -76,7 +80,21 @@ export function registerForwardCleanupHandler(client: Client): void {
                     `🗑️ 転送メッセージを削除しました (ID: ${message.id})`,
                 );
             } catch (error) {
-                logger.error("転送メッセージの削除に失敗しました:\n", error);
+                // Unknown Message (10008) は既に削除されたメッセージへのリアクション時に
+                // 発生しうる想定内のケースなので warn レベルで記録
+                if (
+                    error instanceof DiscordAPIError &&
+                    error.code === DISCORD_ERROR_UNKNOWN_MESSAGE
+                ) {
+                    logger.warn(
+                        "転送メッセージは既に削除されています（Unknown Message）",
+                    );
+                } else {
+                    logger.error(
+                        "転送メッセージの削除に失敗しました:\n",
+                        error,
+                    );
+                }
             }
         },
     );
