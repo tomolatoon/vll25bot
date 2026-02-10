@@ -1,3 +1,4 @@
+import type { ButtonHandler } from "@core/types";
 import {
     ActionRowBuilder,
     type ButtonInteraction,
@@ -5,9 +6,8 @@ import {
     TextInputBuilder,
     TextInputStyle,
 } from "discord.js";
-import type { ButtonHandler } from "../../../core/types";
 import { LIST_NAV_PAGE_PREFIX, LIST_PAGE_JUMP_PREFIX } from "../constants";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 import {
     decodeState,
     filterAndSortReminders,

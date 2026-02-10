@@ -1,5 +1,5 @@
+import type { SelectMenuHandler } from "@core/types";
 import type { AnySelectMenuInteraction } from "discord.js";
-import type { SelectMenuHandler } from "../../../core/types";
 import { LIST_SELECT_PREFIX } from "../constants";
 import { renderReminderList } from "../services/renderer";
 import { decodeState } from "../utils/list";

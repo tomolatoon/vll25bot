@@ -1,8 +1,8 @@
+import type { Command } from "@core/types";
 import {
     type ChatInputCommandInteraction,
     SlashCommandBuilder,
 } from "discord.js";
-import type { Command } from "../../../core/types";
 import add from "./add";
 import cancel from "./cancel";
 import list from "./list";

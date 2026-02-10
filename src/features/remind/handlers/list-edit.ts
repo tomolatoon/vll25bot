@@ -1,8 +1,8 @@
+import type { ButtonHandler } from "@core/types";
 import { type ButtonInteraction, MessageFlags } from "discord.js";
-import type { ButtonHandler } from "../../../core/types";
 import { buildEditReminderModal } from "../components/modals";
 import { LIST_EDIT_PREFIX } from "../constants";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 import { decodeState } from "../utils/list";
 
 export const listEditHandler: ButtonHandler = {

@@ -5,6 +5,7 @@
  * そのメッセージを削除する機能を提供する
  */
 
+import { logger } from "@utils/logger";
 import type {
     Client,
     MessageReaction,
@@ -12,7 +13,6 @@ import type {
     PartialUser,
     User,
 } from "discord.js";
-import { logger } from "../utils/logger";
 
 /** 転送メッセージ削除用の絵文字 */
 const DELETE_FORWARDED_MESSAGE_EMOJI = "🗑️";

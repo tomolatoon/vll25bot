@@ -8,22 +8,22 @@ import {
 } from "discord.js";
 import type { Command } from "../types";
 
-export const ping: Command = {
-    data: new SlashCommandBuilder()
-        .setName("ping")
-        .setDescription("Botの応答速度を確認します"),
+const data = new SlashCommandBuilder()
+    .setName("ping")
+    .setDescription("Botの応答速度を確認します");
 
-    async execute(interaction: ChatInputCommandInteraction) {
-        await interaction.reply("🏓 Pong!");
+async function execute(interaction: ChatInputCommandInteraction) {
+    await interaction.reply("🏓 Pong!");
 
-        const sent = await interaction.fetchReply();
+    const sent = await interaction.fetchReply();
 
-        const totalTime = sent.createdTimestamp - interaction.createdTimestamp; // 全体の応答時間
+    const totalTime = sent.createdTimestamp - interaction.createdTimestamp; // 全体の応答時間
 
-        await interaction.editReply(
-            `🏓 Pong!
+    await interaction.editReply(
+        `🏓 Pong!
 📡 合計応答時間: ${totalTime}ms
 `,
-        );
-    },
-};
+    );
+}
+
+export default { data, execute };

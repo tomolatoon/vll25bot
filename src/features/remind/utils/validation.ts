@@ -1,5 +1,5 @@
-import { parseFutureDateTime } from "../../../lib/parser/date-parser";
-import { reminderService } from "../reminder-service"; // シングルトンインスタンス
+import { parseFutureDateTime } from "@lib/parser/date-parser";
+import { reminderService } from "../services/reminder-service"; // シングルトンインスタンス
 import type { Reminder } from "../types";
 
 export type ValidationResult =

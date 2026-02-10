@@ -2,7 +2,7 @@
  * types.ts - misc機能の型定義
  */
 
-import type { Command } from "../../core/types";
+import type { Command } from "@core/types";
 
 export type { Command };
 

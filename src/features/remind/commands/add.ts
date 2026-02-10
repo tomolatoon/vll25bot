@@ -1,3 +1,4 @@
+import { parseFutureDateTime } from "@lib/parser/date-parser";
 import {
     ChannelType,
     type ChatInputCommandInteraction,
@@ -5,10 +6,9 @@ import {
     SlashCommandSubcommandBuilder,
     type TextChannel,
 } from "discord.js";
-import { parseFutureDateTime } from "../../../lib/parser/date-parser";
 import { buildReminderButtons } from "../components/actions";
 import { buildReminderEmbed } from "../components/embeds";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 
 const data = new SlashCommandSubcommandBuilder()
     .setName("add")

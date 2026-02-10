@@ -1,9 +1,9 @@
+import type { ButtonHandler } from "@core/types";
 import { type ButtonInteraction, MessageFlags } from "discord.js";
-import type { ButtonHandler } from "../../../core/types";
 import { buildCancelledButtons } from "../components/actions";
 import { buildCancelEmbed } from "../components/embeds";
 import { LIST_CANCEL_PREFIX } from "../constants";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 import { renderReminderList } from "../services/renderer";
 import { decodeState } from "../utils/list";
 import { validateReminderForUpdate } from "../utils/validation";

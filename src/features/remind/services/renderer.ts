@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import {
     type ActionRowBuilder,
     type ButtonInteraction,
@@ -6,7 +7,6 @@ import {
     type ModalSubmitInteraction,
     type StringSelectMenuInteraction,
 } from "discord.js";
-import { logger } from "../../../utils/logger";
 import {
     buildActionButtons,
     buildOtherNavButtons,
@@ -14,7 +14,7 @@ import {
     buildSelectMenu,
 } from "../components/actions";
 import { buildListEmbed } from "../components/embeds";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 import {
     type ListState,
     filterAndSortReminders,

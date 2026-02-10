@@ -1,5 +1,5 @@
+import type { ButtonHandler } from "@core/types";
 import type { ButtonInteraction } from "discord.js";
-import type { ButtonHandler } from "../../../core/types";
 import { renderReminderList } from "../services/renderer";
 import { decodeState, getNextState } from "../utils/list";
 

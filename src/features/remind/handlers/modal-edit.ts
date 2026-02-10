@@ -1,16 +1,12 @@
+import type { ModalHandler } from "@core/types";
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
-import type { ModalHandler } from "../../../core/types";
 import { buildReminderButtons } from "../components/actions";
 import {
     buildReminderEmbed,
     buildUpdateResponseEmbed,
 } from "../components/embeds";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 import { buildChangesArray, validateDateTimeInput } from "../utils/validation";
-
-// NOTE: ui-exports is temporary, I should import from individual files if ui-exports doesn't work or if I want to be clean.
-// Given previous error, I should import from components directly.
-// actually, I will import from components/embeds etc directly.
 
 const editModalHandler: ModalHandler = {
     idPrefix: "remind_edit_modal:",

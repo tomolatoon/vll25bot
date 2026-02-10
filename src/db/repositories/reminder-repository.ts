@@ -1,11 +1,11 @@
-import { v4 as uuidv4 } from "uuid";
+import { db } from "@db/client";
 import type {
     FilterOptions,
     Reminder,
     ReminderData,
-} from "../../features/remind/types";
-import { logger } from "../../utils/logger";
-import { db } from "../client";
+} from "@features/remind/types";
+import { logger } from "@utils/logger";
+import { v4 as uuidv4 } from "uuid";
 
 export class ReminderRepository {
     async create(

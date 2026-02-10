@@ -1,10 +1,10 @@
-import { Collection } from "discord.js";
 import type {
     ButtonHandler,
     Command,
     ModalHandler,
     SelectMenuHandler,
-} from "./types";
+} from "@core/types";
+import { Collection } from "discord.js";
 
 export class Registry {
     public readonly commands = new Collection<string, Command>();

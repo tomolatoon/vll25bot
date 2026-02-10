@@ -4,9 +4,12 @@ import {
     SlashCommandSubcommandBuilder,
 } from "discord.js";
 import { buildCancelledButtons } from "../components/actions";
-import { buildCancelEmbed } from "../components/embeds";
-import { buildCancelSuccessEmbed } from "../components/embeds";
-import { reminderService } from "../reminder-service";
+import {
+    buildCancelEmbed,
+    buildCancelSuccessEmbed,
+} from "../components/embeds";
+import { reminderService } from "../services/reminder-service";
+import { validateReminderForUpdate } from "../utils/validation";
 
 const data = new SlashCommandSubcommandBuilder()
     .setName("cancel")

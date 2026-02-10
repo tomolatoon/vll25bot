@@ -8,9 +8,9 @@
  */
 
 import { join } from "node:path";
+import { Loader } from "@core/loader";
+import { Registry } from "@core/registry";
 import { REST, Routes } from "discord.js";
-import { Loader } from "./core/loader";
-import { Registry } from "./core/registry";
 
 // 環境変数（Bunは.envを自動で読み込む）
 const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = Bun.env;

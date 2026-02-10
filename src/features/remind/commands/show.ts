@@ -1,11 +1,11 @@
+import { buildReminderButtons } from "@features/remind/components/actions";
 import {
     type ChatInputCommandInteraction,
     MessageFlags,
     SlashCommandSubcommandBuilder,
 } from "discord.js";
-import { buildReminderButtons } from "../components/actions";
 import { buildReminderDetailEmbed } from "../components/embeds";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 
 const data = new SlashCommandSubcommandBuilder()
     .setName("show")

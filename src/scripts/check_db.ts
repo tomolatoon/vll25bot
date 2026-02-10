@@ -1,4 +1,7 @@
-import { type ReminderRow, db } from "../db/client";
+import { db } from "@db/client";
+import type { Reminder } from "@features/remind/types";
+
+type ReminderRow = Reminder;
 
 console.log("🔍 データベースの内容を確認します...");
 

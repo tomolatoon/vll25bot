@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { logger } from "../utils/logger";
-import type { Registry } from "./registry";
+import type { Registry } from "@core/registry";
+import { logger } from "@utils/logger";
 import type {
     ButtonHandler,
     Command,

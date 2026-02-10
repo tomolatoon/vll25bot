@@ -1,8 +1,16 @@
-import { Client, type ClientOptions, GatewayIntentBits } from "discord.js";
-import { env } from "../config/env";
-import { logger } from "../utils/logger";
-import { Loader } from "./loader";
-import { Registry } from "./registry";
+import { join } from "node:path";
+import { env } from "@config/env";
+import { Loader } from "@core/loader";
+import { Registry } from "@core/registry";
+import { migrationService } from "@features/remind/services/migration"; // Absolute path for core
+import { reminderService } from "@features/remind/services/reminder-service"; // Absolute path for core
+import { logger } from "@utils/logger";
+import {
+    Client,
+    GatewayIntentBits,
+    type InteractionReplyOptions,
+    MessageFlags,
+} from "discord.js";
 
 export class CustomClient extends Client {
     public readonly registry: Registry;
@@ -24,10 +32,20 @@ export class CustomClient extends Client {
 
     public async init() {
         // Load features
-        const featuresPath = `${process.cwd()}/src/features`;
-        await this.loader.loadFeatures(featuresPath);
+        // src/index.ts から呼ばれることを想定して、ここからの相対パスではなく
+        // プロジェクトルート(process.cwd())または__dirnameを基準にする
+        // client.ts は src/core/ にあるので、features は ../features つまり src/features
+        const featuresPath = join(process.cwd(), "src", "features");
 
-        // Register event listeners (Interaction Create, etc.)
+        try {
+            await this.loader.loadFeatures(featuresPath);
+            logger.info("📦 機能の読み込みが完了しました");
+        } catch (error) {
+            logger.error("❌ 機能の読み込みに失敗しました:", error);
+            throw error;
+        }
+
+        // Register event listeners
         this.registerEvents();
 
         // Login
@@ -35,98 +53,85 @@ export class CustomClient extends Client {
     }
 
     private registerEvents() {
-        this.on("ready", () => {
+        this.on("clientReady", async () => {
             logger.info(`✅ ${this.user?.tag} がオンラインになりました！`);
+            logger.info(`🤖 ${this.guilds.cache.size} サーバーに接続中`);
+
+            // リマインダーサービスの初期化 (from index.ts)
+            reminderService.setClient(this);
+            await migrationService.restoreFromJson();
         });
 
         this.on("interactionCreate", async (interaction) => {
-            if (interaction.isChatInputCommand()) {
-                const command = this.registry.commands.get(
-                    interaction.commandName,
-                );
-
-                if (!command) {
-                    logger.warn(
-                        `⚠️ コマンドハンドラーが見つかりません: ${interaction.commandName}`,
+            try {
+                if (interaction.isChatInputCommand()) {
+                    const command = this.registry.commands.get(
+                        interaction.commandName,
                     );
-                    return;
-                }
 
-                try {
+                    if (!command) {
+                        logger.warn(
+                            `⚠️ コマンドハンドラーが見つかりません: ${interaction.commandName}`,
+                        );
+                        return;
+                    }
+
                     await command.execute(interaction);
-                } catch (error) {
-                    logger.error("❌ コマンド実行エラー:", error);
+                } else if (interaction.isButton()) {
+                    const result = this.registry.resolveButtonHandler(
+                        interaction.customId,
+                    );
+                    if (result) {
+                        await result.handler.execute(interaction, result.args);
+                    } else {
+                        logger.warn(
+                            `⚠️ ボタンハンドラーが見つかりません: ${interaction.customId}`,
+                        );
+                    }
+                } else if (interaction.isModalSubmit()) {
+                    const result = this.registry.resolveModalHandler(
+                        interaction.customId,
+                    );
+                    if (result) {
+                        await result.handler.execute(interaction, result.args);
+                    } else {
+                        logger.warn(
+                            `⚠️ モーダルハンドラーが見つかりません: ${interaction.customId}`,
+                        );
+                    }
+                } else if (interaction.isAnySelectMenu()) {
+                    const result = this.registry.resolveSelectMenuHandler(
+                        interaction.customId,
+                    );
+                    if (result) {
+                        await result.handler.execute(interaction, result.args);
+                    } else {
+                        logger.warn(
+                            `⚠️ セレクトメニューハンドラーが見つかりません: ${interaction.customId}`,
+                        );
+                    }
+                }
+            } catch (error) {
+                logger.error("❌ インタラクション実行エラー:", error);
+
+                if (
+                    interaction.isRepliable() &&
+                    !interaction.replied &&
+                    !interaction.deferred
+                ) {
+                    const reply: InteractionReplyOptions = {
+                        content: "エラーが発生しました。",
+                        flags: MessageFlags.Ephemeral,
+                    };
                     try {
-                        if (interaction.replied || interaction.deferred) {
-                            await interaction.followUp({
-                                content: "エラーが発生しました。",
-                                ephemeral: true,
-                            });
-                        } else {
-                            await interaction.reply({
-                                content: "エラーが発生しました。",
-                                ephemeral: true,
-                            });
-                        }
+                        await interaction.reply(reply);
                     } catch (replyError) {
                         logger.error(
-                            "❌ エラーメッセージの送信に失敗しました:",
+                            "❌ エラーメッセージの送信にも失敗しました:",
                             replyError,
                         );
                     }
                 }
-            } else if (interaction.isButton()) {
-                const result = this.registry.resolveButtonHandler(
-                    interaction.customId,
-                );
-                if (result) {
-                    try {
-                        await result.handler.execute(interaction, result.args);
-                    } catch (error) {
-                        logger.error("❌ ボタンハンドラーエラー:", error);
-                    }
-                } else {
-                    logger.warn(
-                        `⚠️ ボタンハンドラーが見つかりません: ${interaction.customId}`,
-                    );
-                }
-            } else if (interaction.isModalSubmit()) {
-                const result = this.registry.resolveModalHandler(
-                    interaction.customId,
-                );
-                if (result) {
-                    try {
-                        await result.handler.execute(interaction, result.args);
-                    } catch (error) {
-                        logger.error("❌ モーダルハンドラーエラー:", error);
-                    }
-                } else {
-                    logger.warn(
-                        `⚠️ モーダルハンドラーが見つかりません: ${interaction.customId}`,
-                    );
-                }
-            } else if (interaction.isAnySelectMenu()) {
-                const result = this.registry.resolveSelectMenuHandler(
-                    interaction.customId,
-                );
-                if (result) {
-                    try {
-                        await result.handler.execute(interaction, result.args);
-                    } catch (error) {
-                        logger.error(
-                            "❌ セレクトメニューハンドラーエラー:",
-                            error,
-                        );
-                    }
-                } else {
-                    logger.warn(
-                        `⚠️ セレクトメニューハンドラーが見つかりません: ${interaction.customId}`,
-                    );
-                }
-            } else {
-                logger.warn(
-                    `⚠️ 不明なインタラクション: ${interaction.commandName}`,
-                );
             }
         });
     }

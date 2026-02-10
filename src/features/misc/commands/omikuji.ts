@@ -36,28 +36,28 @@ function drawFortune(): Fortune {
     return fortunes[3]; // フォールバック: 吉
 }
 
-export const omikuji: Command = {
-    data: new SlashCommandBuilder()
-        .setName("omikuji")
-        .setDescription("おみくじを引きます"),
+const data = new SlashCommandBuilder()
+    .setName("omikuji")
+    .setDescription("おみくじを引きます");
 
-    async execute(interaction: ChatInputCommandInteraction) {
-        const fortune = drawFortune();
-        const today = new Date().toLocaleDateString("ja-JP", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
+async function execute(interaction: ChatInputCommandInteraction) {
+    const fortune = drawFortune();
+    const today = new Date().toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
 
-        const embed = new EmbedBuilder()
-            .setTitle(`${fortune.emoji} おみくじ ${fortune.emoji}`)
-            .setDescription(`# ${fortune.result}`)
-            .setColor(fortune.color)
-            .setFooter({
-                text: `${today}`,
-            })
-            .setTimestamp();
+    const embed = new EmbedBuilder()
+        .setTitle(`${fortune.emoji} おみくじ ${fortune.emoji}`)
+        .setDescription(`# ${fortune.result}`)
+        .setColor(fortune.color)
+        .setFooter({
+            text: `${today}`,
+        })
+        .setTimestamp();
 
-        await interaction.reply({ embeds: [embed] });
-    },
-};
+    await interaction.reply({ embeds: [embed] });
+}
+
+export default { data, execute };

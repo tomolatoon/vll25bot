@@ -1,9 +1,11 @@
 import {
     type ActionRowBuilder,
+    type ButtonBuilder,
     ChannelType,
     type ChatInputCommandInteraction,
     MessageFlags,
     SlashCommandSubcommandBuilder,
+    type StringSelectMenuBuilder,
     type TextChannel,
 } from "discord.js";
 import {
@@ -13,7 +15,7 @@ import {
     buildSelectMenu,
 } from "../components/actions";
 import { buildListEmbed } from "../components/embeds";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 import {
     type ListState,
     type SortOrder,
@@ -76,7 +78,10 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     const embed = buildListEmbed(pageItems, state, totalPages);
 
-    const components: ActionRowBuilder<any>[] = [];
+    const components: (
+        | ActionRowBuilder<StringSelectMenuBuilder>
+        | ActionRowBuilder<ButtonBuilder>
+    )[] = [];
     if (pageItems.length > 0) {
         components.push(buildSelectMenu(pageItems, state));
         components.push(buildActionButtons(state));

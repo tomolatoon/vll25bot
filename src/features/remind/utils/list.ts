@@ -1,4 +1,4 @@
-import { logger } from "../../../utils/logger";
+import { logger } from "@utils/logger";
 import {
     LIST_NAV_NEXT_PREFIX,
     LIST_NAV_PREV_PREFIX,

@@ -1,6 +1,6 @@
 import { Database as SQLite } from "bun:sqlite";
-import { DB_FILE_PATH } from "../constants";
-import { logger } from "../utils/logger";
+import { DB_FILE_PATH } from "@/constants";
+import { logger } from "@utils/logger";
 
 export class DatabaseClient {
     private db: SQLite;

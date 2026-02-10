@@ -10,7 +10,7 @@ import {
     buildReminderEmbed,
     buildUpdateResponseEmbed,
 } from "../components/embeds";
-import { reminderService } from "../reminder-service";
+import { reminderService } from "../services/reminder-service";
 import {
     buildChangesArray,
     validateDateTimeInput,
