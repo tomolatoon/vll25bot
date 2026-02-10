@@ -5,11 +5,12 @@ import {
     buildReminderEmbed,
     buildUpdateResponseEmbed,
 } from "../components/embeds";
+import { MODAL_ID_REMIND_EDIT } from "../constants";
 import { reminderService } from "../services/reminder-service";
 import { buildChangesArray, validateDateTimeInput } from "../utils/validation";
 
 const editModalHandler: ModalHandler = {
-    idPrefix: "remind_edit_modal:",
+    idPrefix: MODAL_ID_REMIND_EDIT,
     type: "MODAL",
     async execute(interaction: ModalSubmitInteraction) {
         const reminderId = interaction.customId.split(":")[1];

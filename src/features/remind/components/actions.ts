@@ -6,6 +6,11 @@ import {
 } from "discord.js";
 import {
     BUTTON_ID_REMIND_CANCEL,
+    BUTTON_ID_REMIND_COPY_ID,
+    BUTTON_ID_REMIND_EDIT,
+    BUTTON_ID_REMIND_RELOAD,
+    DISABLED_ID_CANCEL,
+    DISABLED_ID_EDIT,
     LIST_CANCEL_PREFIX,
     LIST_EDIT_PREFIX,
     LIST_NAV_NEXT_PREFIX,
@@ -15,6 +20,7 @@ import {
     LIST_RELOAD_PREFIX,
     LIST_SELECT_PREFIX,
     LIST_SHOW_PREFIX,
+    SELECT_MESSAGE_PREVIEW_LENGTH,
 } from "../constants";
 import type { Reminder } from "../types";
 import { type ListState, encodeState } from "../utils/list";
@@ -26,19 +32,19 @@ export function buildReminderButtons(
     reminderId: string,
 ): ActionRowBuilder<ButtonBuilder> {
     const editButton = new ButtonBuilder()
-        .setCustomId(`remind_edit:${reminderId}`)
+        .setCustomId(`${BUTTON_ID_REMIND_EDIT}:${reminderId}`)
         .setLabel("編集")
         .setStyle(ButtonStyle.Secondary)
         .setEmoji("✏️");
 
     const copyIdButton = new ButtonBuilder()
-        .setCustomId(`remind_copy_id:${reminderId}`)
+        .setCustomId(`${BUTTON_ID_REMIND_COPY_ID}:${reminderId}`)
         .setLabel("ID")
         .setStyle(ButtonStyle.Secondary)
         .setEmoji("📋");
 
     const reloadButton = new ButtonBuilder()
-        .setCustomId(`remind_reload:${reminderId}`)
+        .setCustomId(`${BUTTON_ID_REMIND_RELOAD}:${reminderId}`)
         .setLabel("更新")
         .setStyle(ButtonStyle.Secondary)
         .setEmoji("🔄");
@@ -63,14 +69,14 @@ export function buildCancelledButtons(
     reminderId: string,
 ): ActionRowBuilder<ButtonBuilder> {
     const editButton = new ButtonBuilder()
-        .setCustomId(`disabled_edit:${reminderId}`)
+        .setCustomId(`${DISABLED_ID_EDIT}:${reminderId}`)
         .setLabel("編集")
         .setStyle(ButtonStyle.Secondary)
         .setEmoji("✏️")
         .setDisabled(true);
 
     const cancelButton = new ButtonBuilder()
-        .setCustomId(`disabled_cancel:${reminderId}`)
+        .setCustomId(`${DISABLED_ID_CANCEL}:${reminderId}`)
         .setLabel("登録解除")
         .setStyle(ButtonStyle.Danger)
         .setEmoji("🗑️")
@@ -94,8 +100,8 @@ export function buildSelectMenu(
         const date = new Date(r.remindAt);
         const dateStr = date.toLocaleString("ja-JP");
         const msgPreview =
-            r.message.length > 20
-                ? `${r.message.substring(0, 20)}...`
+            r.message.length > SELECT_MESSAGE_PREVIEW_LENGTH
+                ? `${r.message.substring(0, SELECT_MESSAGE_PREVIEW_LENGTH)}...`
                 : r.message;
 
         const emoji =

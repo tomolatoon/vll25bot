@@ -4,6 +4,7 @@ import {
     TextInputBuilder,
     TextInputStyle,
 } from "discord.js";
+import { MODAL_ID_REMIND_EDIT } from "../constants";
 
 /**
  * リマインダー編集用のモーダルを生成する
@@ -13,7 +14,7 @@ export function buildEditReminderModal(
     initialMessage: string,
 ): ModalBuilder {
     const modal = new ModalBuilder()
-        .setCustomId(`remind_edit_modal:${reminderId}`)
+        .setCustomId(`${MODAL_ID_REMIND_EDIT}:${reminderId}`)
         .setTitle("リマインダー編集");
 
     const messageInput = new TextInputBuilder()

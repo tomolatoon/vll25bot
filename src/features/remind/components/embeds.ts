@@ -1,5 +1,6 @@
 import { EmbedBuilder } from "discord.js";
 import {
+    LIST_MESSAGE_PREVIEW_LENGTH,
     REMIND_COLOR_ERROR,
     REMIND_COLOR_INFO,
     REMIND_COLOR_SUCCESS,
@@ -245,8 +246,8 @@ export function buildListEmbed(
         const remindAt = new Date(r.remindAt);
         const unixTime = Math.floor(remindAt.getTime() / 1000);
         const msgPreview =
-            r.message.length > 50
-                ? `${r.message.substring(0, 50)}...`
+            r.message.length > LIST_MESSAGE_PREVIEW_LENGTH
+                ? `${r.message.substring(0, LIST_MESSAGE_PREVIEW_LENGTH)}...`
                 : r.message;
 
         const emoji = NUMBER_EMOJIS[index] || `#${index + 1}`;

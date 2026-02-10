@@ -1,10 +1,11 @@
 import type { ButtonHandler } from "@core/types";
 import { type ButtonInteraction, MessageFlags } from "discord.js";
 import { buildEditReminderModal } from "../components/modals";
+import { BUTTON_ID_REMIND_EDIT } from "../constants";
 import { reminderService } from "../services/reminder-service";
 
 export const editHandler: ButtonHandler = {
-    idPrefix: "remind_edit:",
+    idPrefix: BUTTON_ID_REMIND_EDIT,
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
         const reminderId = interaction.customId.split(":")[1];

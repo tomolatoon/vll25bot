@@ -7,7 +7,7 @@ import { reminderService } from "../services/reminder-service";
 import { validateReminderForUpdate } from "../utils/validation";
 
 export const cancelHandler: ButtonHandler = {
-    idPrefix: `${BUTTON_ID_REMIND_CANCEL}:`,
+    idPrefix: BUTTON_ID_REMIND_CANCEL,
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
         const reminderId = interaction.customId.split(":")[1];

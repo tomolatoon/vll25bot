@@ -2,6 +2,11 @@ import { ReminderRepository } from "@db/repositories/reminder-repository";
 import { logger } from "@utils/logger";
 import type { Client, TextChannel } from "discord.js";
 import { buildExecutedReminderEmbed } from "../components/embeds";
+import {
+    CHECK_INTERVAL_MS,
+    INITIAL_CHECK_DELAY_MS,
+    SCHEDULE_BUFFER_MS,
+} from "../constants";
 import type { Reminder, ReminderData } from "../types";
 
 export class ReminderService {
@@ -35,10 +40,10 @@ export class ReminderService {
         // 1分ごとにチェック
         this.checkInterval = setInterval(() => {
             this.checkReminders();
-        }, 60 * 1000);
+        }, CHECK_INTERVAL_MS);
 
         // 初回チェック
-        setTimeout(() => this.checkReminders(), 1000);
+        setTimeout(() => this.checkReminders(), INITIAL_CHECK_DELAY_MS);
     }
 
     public async create(
@@ -168,7 +173,7 @@ export class ReminderService {
 
     private async checkReminders() {
         const now = Date.now();
-        const threshold = now + 70 * 1000; // 70秒のバッファ
+        const threshold = now + CHECK_INTERVAL_MS + SCHEDULE_BUFFER_MS;
 
         try {
             const tasks = await this.repository.findAll({
@@ -194,7 +199,7 @@ export class ReminderService {
 
     private scheduleIfImminent(reminder: Reminder) {
         const now = Date.now();
-        if (reminder.remindAt <= now + 70 * 1000) {
+        if (reminder.remindAt <= now + CHECK_INTERVAL_MS + SCHEDULE_BUFFER_MS) {
             this.scheduleTask(reminder);
         }
     }

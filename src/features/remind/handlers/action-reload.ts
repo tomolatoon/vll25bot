@@ -5,11 +5,11 @@ import {
     buildReminderDetailEmbed,
     buildReminderEmbed,
 } from "../components/embeds";
-import { REMIND_COLOR_INFO } from "../constants";
+import { BUTTON_ID_REMIND_RELOAD, REMIND_COLOR_INFO } from "../constants";
 import { reminderService } from "../services/reminder-service";
 
 export const reloadHandler: ButtonHandler = {
-    idPrefix: "remind_reload:",
+    idPrefix: BUTTON_ID_REMIND_RELOAD,
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
         await interaction.deferUpdate();
