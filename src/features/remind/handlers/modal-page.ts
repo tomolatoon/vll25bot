@@ -2,7 +2,7 @@ import type { ModalHandler } from "@core/types";
 import { logger } from "@utils/logger";
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import { LIST_PAGE_JUMP_PREFIX } from "../constants";
-import { renderReminderList } from "../services/renderer";
+import { buildReminderListView } from "../services/renderer";
 import { decodeState } from "../utils/list";
 
 export const pageJumpModalHandler: ModalHandler = {
@@ -37,7 +37,17 @@ export const pageJumpModalHandler: ModalHandler = {
         state.page = pageNum - 1;
 
         // 新しい状態でリストを再描画
-        await renderReminderList(interaction, state);
+        const { embed, components } = await buildReminderListView(
+            interaction.guildId,
+            state,
+        );
+
+        if (interaction.isFromMessage()) {
+            await interaction.update({
+                embeds: [embed],
+                components: components,
+            });
+        }
     },
 };
 

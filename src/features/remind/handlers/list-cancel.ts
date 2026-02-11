@@ -2,7 +2,7 @@ import type { ButtonHandler } from "@core/types";
 import { type ButtonInteraction, MessageFlags } from "discord.js";
 import { LIST_CANCEL_PREFIX } from "../constants";
 import { reminderService } from "../services/reminder-service";
-import { renderReminderList } from "../services/renderer";
+import { buildReminderListView } from "../services/renderer";
 import { decodeState } from "../utils/list";
 import { validateReminderForUpdate } from "../utils/validation";
 
@@ -34,14 +34,20 @@ export const listCancelHandler: ButtonHandler = {
                 return;
             }
 
-            const reminder = validation.reminder;
-
             // 削除
             await reminderService.delete(selectedId);
         }
 
         // リスト再描画 (選択解除)
-        await renderReminderList(interaction, state);
+        const { embed, components } = await buildReminderListView(
+            interaction.guildId,
+            state,
+        );
+
+        await interaction.update({
+            embeds: [embed],
+            components: components,
+        });
     },
 };
 

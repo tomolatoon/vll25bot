@@ -9,21 +9,8 @@ import {
     type StringSelectMenuBuilder,
     type TextChannel,
 } from "discord.js";
-import {
-    buildActionButtons,
-    buildOtherNavButtons,
-    buildPaginationButtons,
-    buildSelectMenu,
-} from "../components/actions";
-import { buildListEmbed } from "../components/embeds";
-import { reminderService } from "../services/reminder-service";
-import {
-    type ListState,
-    type SortOrder,
-    filterAndSortReminders,
-    getPageItems,
-    getTotalPages,
-} from "../utils/list";
+import { buildReminderListView } from "../services/renderer";
+import type { ListState, SortOrder } from "../utils/list";
 
 const data = new SlashCommandSubcommandBuilder()
     .setName("list")
@@ -72,27 +59,12 @@ async function execute(interaction: ChatInputCommandInteraction) {
             guildId: interaction.guildId,
         };
 
-        const allReminders = await reminderService.getByGuild(
-            interaction.guildId,
-        );
-        const filtered = filterAndSortReminders(allReminders, state);
-        const totalPages = getTotalPages(filtered.length);
-        const pageItems = getPageItems(filtered, state.page);
-
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        const embed = buildListEmbed(pageItems, state, totalPages);
-
-        const components: (
-            | ActionRowBuilder<StringSelectMenuBuilder>
-            | ActionRowBuilder<ButtonBuilder>
-        )[] = [];
-        if (pageItems.length > 0) {
-            components.push(buildSelectMenu(pageItems, state));
-            components.push(buildActionButtons(state));
-        }
-        components.push(buildPaginationButtons(state, totalPages));
-        components.push(buildOtherNavButtons(state));
+        const { embed, components } = await buildReminderListView(
+            interaction.guildId,
+            state,
+        );
 
         await interaction.editReply({
             embeds: [embed],

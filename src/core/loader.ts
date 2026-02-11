@@ -131,35 +131,36 @@ export class Loader {
         );
     }
 
-    private isButtonHandler(obj: unknown): obj is ButtonHandler {
+    /**
+     * ボタン、モーダル、セレクトメニューのインタラクションハンドラーの共通ベースチェック
+     */
+    private isInteractionHandler(obj: unknown): boolean {
         return (
             typeof obj === "object" &&
             obj !== null &&
             "idPrefix" in obj &&
             "execute" in obj &&
-            "type" in obj &&
+            "type" in obj
+        );
+    }
+
+    private isButtonHandler(obj: unknown): obj is ButtonHandler {
+        return (
+            this.isInteractionHandler(obj) &&
             (obj as ButtonHandler).type === "BUTTON"
         );
     }
 
     private isModalHandler(obj: unknown): obj is ModalHandler {
         return (
-            typeof obj === "object" &&
-            obj !== null &&
-            "idPrefix" in obj &&
-            "execute" in obj &&
-            "type" in obj &&
+            this.isInteractionHandler(obj) &&
             (obj as ModalHandler).type === "MODAL"
         );
     }
 
     private isSelectMenuHandler(obj: unknown): obj is SelectMenuHandler {
         return (
-            typeof obj === "object" &&
-            obj !== null &&
-            "idPrefix" in obj &&
-            "execute" in obj &&
-            "type" in obj &&
+            this.isInteractionHandler(obj) &&
             (obj as SelectMenuHandler).type === "SELECT"
         );
     }

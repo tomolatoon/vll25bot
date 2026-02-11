@@ -1,10 +1,14 @@
 import { ReminderRepository } from "@db/repositories/reminder-repository";
 import { logger } from "@utils/logger";
 import type { Client, TextChannel } from "discord.js";
-import { buildCancelledButtons } from "../components/actions";
+import {
+    buildCancelledButtons,
+    buildReminderButtons,
+} from "../components/actions";
 import {
     buildCancelEmbed,
     buildExecutedReminderEmbed,
+    buildReminderEmbed,
 } from "../components/embeds";
 import {
     CHECK_INTERVAL_MS,
@@ -251,6 +255,37 @@ export class ReminderService {
         const now = Date.now();
         if (reminder.remindAt <= now + CHECK_INTERVAL_MS + SCHEDULE_BUFFER_MS) {
             this.scheduleTask(reminder);
+        }
+    }
+    /**
+     * リマインダー編集時に元のReplyメッセージを更新する
+     */
+    public async updateOriginalMessageAsEdited(
+        reminder: Reminder,
+    ): Promise<void> {
+        if (
+            !this.client ||
+            !reminder.replyMessageId ||
+            !reminder.replyChannelId
+        ) {
+            return;
+        }
+
+        try {
+            const channel = await this.client.channels.fetch(
+                reminder.replyChannelId,
+            );
+            if (channel?.isTextBased()) {
+                const message = await channel.messages.fetch(
+                    reminder.replyMessageId,
+                );
+                await message.edit({
+                    embeds: [buildReminderEmbed(reminder)],
+                    components: [buildReminderButtons(reminder.id)],
+                });
+            }
+        } catch (error) {
+            logger.debug("元メッセージの更新に失敗（無視）:", error);
         }
     }
 

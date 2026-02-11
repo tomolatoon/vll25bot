@@ -103,7 +103,7 @@ export function getNextState(
         nextState.page++;
     } else if (prefix === LIST_ORDER_PREFIX) {
         nextState.order = nextState.order === "asc" ? "desc" : "asc";
-    } else if (!Object.hasOwn(LIST_PREFIXES, prefix)) {
+    } else if (!LIST_PREFIXES.has(prefix)) {
         logger.warn(
             `⚠️ getNextState: 不明なリストの操作です: customId=${customId}`,
         );

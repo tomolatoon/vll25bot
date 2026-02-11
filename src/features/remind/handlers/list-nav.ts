@@ -1,7 +1,7 @@
 import type { ButtonHandler } from "@core/types";
 import type { ButtonInteraction } from "discord.js";
 import { LIST_NAV_CATCH_ALL_PREFIX } from "../constants";
-import { renderReminderList } from "../services/renderer";
+import { buildReminderListView } from "../services/renderer";
 import { decodeState, getNextState } from "../utils/list";
 
 export const listNavHandler: ButtonHandler = {
@@ -19,7 +19,15 @@ export const listNavHandler: ButtonHandler = {
 
         const nextState = getNextState(state, interaction.customId);
 
-        await renderReminderList(interaction, nextState);
+        const { embed, components } = await buildReminderListView(
+            interaction.guildId,
+            nextState,
+        );
+
+        await interaction.editReply({
+            embeds: [embed],
+            components: components,
+        });
     },
 };
 

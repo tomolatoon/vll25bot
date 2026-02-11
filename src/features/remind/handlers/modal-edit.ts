@@ -56,24 +56,7 @@ const editModalHandler: ModalHandler = {
         });
 
         // 元のメッセージを更新（ID表示など）
-        if (updated.replyMessageId && updated.replyChannelId) {
-            try {
-                const channel = await interaction.client.channels.fetch(
-                    updated.replyChannelId,
-                );
-                if (channel?.isTextBased()) {
-                    const message = await channel.messages.fetch(
-                        updated.replyMessageId,
-                    );
-                    await message.edit({
-                        embeds: [buildReminderEmbed(updated)],
-                        components: [buildReminderButtons(updated.id)],
-                    });
-                }
-            } catch (error) {
-                // 無視（メッセージ削除済みなど）
-            }
-        }
+        await reminderService.updateOriginalMessageAsEdited(updated);
 
         const responseEmbed = buildUpdateResponseEmbed(updated, changes);
 

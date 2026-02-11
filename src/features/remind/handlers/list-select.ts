@@ -1,7 +1,7 @@
 import type { SelectMenuHandler } from "@core/types";
-import type { AnySelectMenuInteraction } from "discord.js";
+import { type AnySelectMenuInteraction, MessageFlags } from "discord.js";
 import { LIST_SELECT_PREFIX } from "../constants";
-import { renderReminderList } from "../services/renderer";
+import { buildReminderListView } from "../services/renderer";
 import { decodeState } from "../utils/list";
 
 export const listSelectHandler: SelectMenuHandler = {
@@ -23,11 +23,16 @@ export const listSelectHandler: SelectMenuHandler = {
         );
 
         // UIを更新
-        // 状態は変わらないが、選択されたリマインダー情報などが必要になる処理は renderReminderList 内 (buildSelectMenu等) で処理される
-        // ただし renderReminderList は全描画を行う。
-        // リスト選択時の挙動は「選択状態の更新」と「アクションボタンの活性化」
-        // selectedId を渡して描画する
-        await renderReminderList(interaction, state, selectedId);
+        const { embed, components } = await buildReminderListView(
+            interaction.guildId,
+            state,
+            selectedId,
+        );
+
+        await interaction.editReply({
+            embeds: [embed],
+            components: components,
+        });
     },
 };
 

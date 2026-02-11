@@ -2,32 +2,32 @@ import type { ButtonHandler } from "@core/types";
 import { type ButtonInteraction, MessageFlags } from "discord.js";
 import { buildEditReminderModal } from "../components/modals";
 import { BUTTON_ID_REMIND_EDIT } from "../constants";
-import { reminderService } from "../services/reminder-service";
+import { validateReminderForUpdate } from "../utils/validation";
 
 export const editHandler: ButtonHandler = {
     idPrefix: BUTTON_ID_REMIND_EDIT,
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
         const reminderId = interaction.customId.split(":")[1];
-        const reminder = await reminderService.getReminderById(reminderId);
 
-        if (!reminder) {
+        // バリデーション（所有権確認など）
+        const validation = await validateReminderForUpdate(
+            reminderId,
+            interaction.user.id,
+        );
+
+        if (!validation.success) {
             await interaction.reply({
-                content: "❌ リマインダーが見つかりません。",
+                content: `❌ ${validation.error}`,
                 flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
-        if (reminder.createdBy !== interaction.user.id) {
-            await interaction.reply({
-                content: "❌ 自分が登録したリマインダーのみ編集できます。",
-                flags: MessageFlags.Ephemeral,
-            });
-            return;
-        }
-
-        const modal = buildEditReminderModal(reminderId, reminder.message);
+        const modal = buildEditReminderModal(
+            reminderId,
+            validation.reminder.message,
+        );
         await interaction.showModal(modal);
     },
 };

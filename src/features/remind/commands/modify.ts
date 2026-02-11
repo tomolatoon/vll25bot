@@ -5,11 +5,7 @@ import {
     SlashCommandSubcommandBuilder,
     type TextChannel,
 } from "discord.js";
-import { buildReminderButtons } from "../components/actions";
-import {
-    buildReminderEmbed,
-    buildUpdateResponseEmbed,
-} from "../components/embeds";
+import { buildUpdateResponseEmbed } from "../components/embeds";
 import { reminderService } from "../services/reminder-service";
 import {
     buildChangesArray,
@@ -113,25 +109,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     });
 
     // 6. 元メッセージを更新
-    if (updated.replyMessageId && updated.replyChannelId) {
-        try {
-            const channel = await interaction.client.channels.fetch(
-                updated.replyChannelId,
-            );
-            if (channel?.isTextBased()) {
-                const message = await channel.messages.fetch(
-                    updated.replyMessageId,
-                );
-                await message.edit({
-                    content: "",
-                    embeds: [buildReminderEmbed(updated)],
-                    components: [buildReminderButtons(updated.id)],
-                });
-            }
-        } catch (error) {
-            // 元メッセージが見つからない場合などは無視
-        }
-    }
+    await reminderService.updateOriginalMessageAsEdited(updated);
 
     // 7. 応答
     const responseEmbed = buildUpdateResponseEmbed(updated, changes);
