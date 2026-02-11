@@ -1,7 +1,5 @@
 import type { ButtonHandler } from "@core/types";
 import { type ButtonInteraction, MessageFlags } from "discord.js";
-import { buildCancelledButtons } from "../components/actions";
-import { buildCancelEmbed } from "../components/embeds";
 import { LIST_CANCEL_PREFIX } from "../constants";
 import { reminderService } from "../services/reminder-service";
 import { renderReminderList } from "../services/renderer";
@@ -40,27 +38,6 @@ export const listCancelHandler: ButtonHandler = {
 
             // 削除
             await reminderService.delete(selectedId);
-
-            // 元のメッセージを「キャンセル済み」に更新
-            if (reminder.replyMessageId && reminder.replyChannelId) {
-                try {
-                    const channel = await interaction.client.channels.fetch(
-                        reminder.replyChannelId,
-                    );
-                    if (channel?.isTextBased()) {
-                        const message = await channel.messages.fetch(
-                            reminder.replyMessageId,
-                        );
-
-                        await message.edit({
-                            embeds: [buildCancelEmbed(reminder)],
-                            components: [buildCancelledButtons(reminder.id)],
-                        });
-                    }
-                } catch (error) {
-                    // エラーは無視（メッセージが既に削除されている場合など）
-                }
-            }
         }
 
         // リスト再描画 (選択解除)

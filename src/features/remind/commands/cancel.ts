@@ -3,13 +3,8 @@ import {
     MessageFlags,
     SlashCommandSubcommandBuilder,
 } from "discord.js";
-import { buildCancelledButtons } from "../components/actions";
-import {
-    buildCancelEmbed,
-    buildCancelSuccessEmbed,
-} from "../components/embeds";
+import { buildCancelSuccessEmbed } from "../components/embeds";
 import { reminderService } from "../services/reminder-service";
-import { validateReminderForUpdate } from "../utils/validation";
 
 const data = new SlashCommandSubcommandBuilder()
     .setName("cancel")
@@ -47,27 +42,6 @@ async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     const { reminder } = result;
-
-    // 元のメッセージを「キャンセル済み」に更新
-    if (reminder.replyMessageId && reminder.replyChannelId) {
-        try {
-            const channel = await interaction.client.channels.fetch(
-                reminder.replyChannelId,
-            );
-            if (channel?.isTextBased()) {
-                const message = await channel.messages.fetch(
-                    reminder.replyMessageId,
-                );
-
-                await message.edit({
-                    embeds: [buildCancelEmbed(reminder)],
-                    components: [buildCancelledButtons(reminder.id)],
-                });
-            }
-        } catch (error) {
-            // メッセージが見つからない場合などは無視
-        }
-    }
 
     // 完了レスポンス
     await interaction.editReply({

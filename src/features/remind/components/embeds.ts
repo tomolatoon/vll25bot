@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import {
     LIST_MESSAGE_PREVIEW_LENGTH,
+    NUMBER_EMOJIS,
     REMIND_COLOR_ERROR,
     REMIND_COLOR_INFO,
     REMIND_COLOR_SUCCESS,
@@ -234,8 +235,6 @@ export function buildListEmbed(
             .setTitle(`📋 リマインダー一覧 (${state.page + 1}/${totalPages})`)
             .setDescription("📭 リマインダーはありません。");
     }
-
-    const NUMBER_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
 
     const embed = new EmbedBuilder()
         .setColor(REMIND_COLOR_INFO)

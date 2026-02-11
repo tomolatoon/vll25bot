@@ -1,7 +1,11 @@
 import { ReminderRepository } from "@db/repositories/reminder-repository";
 import { logger } from "@utils/logger";
 import type { Client, TextChannel } from "discord.js";
-import { buildExecutedReminderEmbed } from "../components/embeds";
+import { buildCancelledButtons } from "../components/actions";
+import {
+    buildCancelEmbed,
+    buildExecutedReminderEmbed,
+} from "../components/embeds";
 import {
     CHECK_INTERVAL_MS,
     INITIAL_CHECK_DELAY_MS,
@@ -76,6 +80,53 @@ export class ReminderService {
         }
     }
 
+    /**
+     * キャンセル時に元のReplyメッセージを「キャンセル済み」Embedに更新する
+     * @param reminder - キャンセルされたリマインダー
+     */
+    private async updateOriginalMessageAsCancelled(
+        reminder: Reminder,
+    ): Promise<void> {
+        if (
+            !this.client ||
+            !reminder.replyMessageId ||
+            !reminder.replyChannelId
+        ) {
+            return;
+        }
+
+        try {
+            const channel = await this.client.channels.fetch(
+                reminder.replyChannelId,
+            );
+            if (channel?.isTextBased()) {
+                const message = await channel.messages.fetch(
+                    reminder.replyMessageId,
+                );
+
+                await message.edit({
+                    embeds: [buildCancelEmbed(reminder)],
+                    components: [buildCancelledButtons(reminder.id)],
+                });
+            }
+        } catch (error) {
+            // メッセージが見つからない場合などは無視
+            logger.debug("元メッセージの更新に失敗（無視）:", error);
+        }
+    }
+
+    /**
+     * スケジュールタスクをクリアする
+     * @param id - リマインダーID
+     */
+    private clearScheduledTask(id: string): void {
+        const timer = this.scheduledTasks.get(id);
+        if (timer) {
+            clearTimeout(timer);
+            this.scheduledTasks.delete(id);
+        }
+    }
+
     public async update(
         id: string,
         updates: Partial<ReminderData>,
@@ -90,6 +141,9 @@ export class ReminderService {
                 return null;
             }
 
+            // 既存のスケジュールタスクをクリア
+            this.clearScheduledTask(id);
+
             await this.repository.update(id, updates);
 
             // 完全なオブジェクトを返し、再スケジュールするために更新後のリマインダーを取得
@@ -98,10 +152,6 @@ export class ReminderService {
 
             // 再スケジュール
             if (updates.remindAt) {
-                if (this.scheduledTasks.has(id)) {
-                    clearTimeout(this.scheduledTasks.get(id));
-                    this.scheduledTasks.delete(id);
-                }
                 this.scheduleIfImminent(updated);
                 logger.info(
                     `✏️ リマインダー更新: ${id} @ ${new Date(updated.remindAt).toLocaleString("ja-JP")}`,
@@ -135,13 +185,14 @@ export class ReminderService {
             }
 
             // メモリから削除
-            if (this.scheduledTasks.has(id)) {
-                clearTimeout(this.scheduledTasks.get(id));
-                this.scheduledTasks.delete(id);
-            }
+            this.clearScheduledTask(id);
 
             await this.repository.delete(id);
             logger.info(`🗑️ リマインダー削除: ${id}`);
+
+            // 元のメッセージを「キャンセル済み」に更新
+            await this.updateOriginalMessageAsCancelled(reminder);
+
             return { success: true, reminder };
         } catch (error) {
             logger.error("❌ リマインダー解除失敗:", error);
@@ -152,10 +203,7 @@ export class ReminderService {
 
     // 強制キャンセル（管理者やタスク完了時など）
     private async forceCancel(id: string) {
-        if (this.scheduledTasks.has(id)) {
-            clearTimeout(this.scheduledTasks.get(id));
-            this.scheduledTasks.delete(id);
-        }
+        this.clearScheduledTask(id);
         await this.repository.delete(id);
     }
 
@@ -163,8 +211,14 @@ export class ReminderService {
      * リマインダーを削除する（権限チェックなどは呼び出し元で行うこと）
      */
     public async delete(id: string): Promise<void> {
+        const reminder = await this.repository.findById(id);
         await this.forceCancel(id);
         logger.info(`🗑️ リマインダーを削除しました: ${id}`);
+
+        // 元のメッセージを「キャンセル済み」に更新
+        if (reminder) {
+            await this.updateOriginalMessageAsCancelled(reminder);
+        }
     }
 
     private async checkReminders() {
@@ -201,9 +255,7 @@ export class ReminderService {
     }
 
     private scheduleTask(reminder: Reminder) {
-        if (this.scheduledTasks.has(reminder.id)) {
-            clearTimeout(this.scheduledTasks.get(reminder.id));
-        }
+        this.clearScheduledTask(reminder.id);
 
         const now = Date.now();
         const delay = Math.max(0, reminder.remindAt - now);

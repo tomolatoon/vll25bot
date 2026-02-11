@@ -20,6 +20,7 @@ import {
     LIST_RELOAD_PREFIX,
     LIST_SELECT_PREFIX,
     LIST_SHOW_PREFIX,
+    NUMBER_EMOJIS,
     SELECT_MESSAGE_PREVIEW_LENGTH,
 } from "../constants";
 import type { Reminder } from "../types";
@@ -104,9 +105,7 @@ export function buildSelectMenu(
                 ? `${r.message.substring(0, SELECT_MESSAGE_PREVIEW_LENGTH)}...`
                 : r.message;
 
-        const emoji =
-            ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"][index] ||
-            `#${index + 1}`;
+        const emoji = NUMBER_EMOJIS[index] || `#${index + 1}`;
 
         return {
             label: `${emoji} ${dateStr}`,

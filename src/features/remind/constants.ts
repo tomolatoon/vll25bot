@@ -41,6 +41,7 @@ export const LIST_CANCEL_PREFIX = "remind_list_cancel" as const;
 export const LIST_RELOAD_PREFIX = "remind_list_reload" as const;
 export const LIST_PAGE_JUMP_PREFIX = "remind_list_jump" as const;
 
+// キー名はリスト操作用プレフィックスの値を用いる
 export const LIST_PREFIXES = {
     remind_list_select: "LIST_SELECT_PREFIX",
     remind_list_prev: "LIST_NAV_PREV_PREFIX",
@@ -53,3 +54,17 @@ export const LIST_PREFIXES = {
     remind_list_reload: "LIST_RELOAD_PREFIX",
     remind_list_jump: "LIST_PAGE_JUMP_PREFIX",
 } as const;
+
+/** 数字絵文字（1〜10） */
+export const NUMBER_EMOJIS = [
+    "1️⃣",
+    "2️⃣",
+    "3️⃣",
+    "4️⃣",
+    "5️⃣",
+    "6️⃣",
+    "7️⃣",
+    "8️⃣",
+    "9️⃣",
+    "🔟",
+] as const;

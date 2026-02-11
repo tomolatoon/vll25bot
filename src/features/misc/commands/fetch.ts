@@ -2,13 +2,13 @@
  * fetch.ts - メッセージ内容を取得するコマンド
  */
 
+import { logger } from "@utils/logger";
 import {
     type ChatInputCommandInteraction,
     type PartialGroupDMChannel,
     SlashCommandBuilder,
     type TextBasedChannel,
 } from "discord.js";
-import type { Command } from "../types";
 
 /**
  * メッセージURLを解析する
@@ -103,13 +103,13 @@ async function execute(interaction: ChatInputCommandInteraction) {
         // チャンネルの存在確認
         const targetChannel = interaction.channel;
         if (!targetChannel || !targetChannel.isTextBased()) {
-            console.error("interaction.channel が無効です");
+            logger.error("interaction.channel が無効です");
             return;
         }
 
         // PartialGroupDMChannel を除外（Guildコマンドなので発生しないが型安全のため）
         if (targetChannel.isDMBased() && targetChannel.partial) {
-            console.error("PartialGroupDMChannel はサポートされていません");
+            logger.error("PartialGroupDMChannel はサポートされていません");
             return;
         }
 
@@ -122,7 +122,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         // 削除用リアクションを追加
         await forwarded.react("🗑️");
     } catch (error) {
-        console.error("メッセージ取得エラー:\n", error);
+        logger.error("メッセージ取得エラー:", error);
 
         // エラー時は editReply が使えない可能性があるため、チャンネルに直接送信
         if (interaction.channel && "send" in interaction.channel) {
