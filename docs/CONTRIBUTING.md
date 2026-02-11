@@ -8,7 +8,7 @@
 - Discord Developer Portal での Bot 作成手順
 - デプロイコマンド (`bun run deploy`)
 
-### 2. [開発ガイド (Development)](development/index.md)
+### 2. 開発ガイド (Development)
 Bot の機能追加や修正を行うためのガイドラインです。
 
 - **[アーキテクチャ (Structure)](development/structure.md)**

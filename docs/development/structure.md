@@ -48,6 +48,8 @@ Botの機能（Feature）ごとにディレクトリを分けて管理します�
 src/features/
 ├── misc/                 # 単発のコマンドや小規模な機能 (omikuji, ping, fetchなど)
 │   ├── commands/         # スラッシュコマンド定義
+│   ├── handlers/         # インタラクションハンドラー
+│   ├── setup.ts          # イベントハンドラー登録
 │   └── types.ts          # 型定義
 └── remind/               # 大規模な機能 (リマインダー)
     ├── commands/         # スラッシュコマンド (add, list, modify...)
@@ -55,7 +57,9 @@ src/features/
     ├── handlers/         # インタラクションハンドラー (ボタン/モーダル操作)
     ├── services/         # ビジネスロジック
     ├── utils/            # 機能固有のユーティリティ
-    └── index.ts          # 公開API定義
+    ├── constants.ts      # 定数定義 (ID, カラー, タイマー, 表示制限)
+    ├── setup.ts          # イベントハンドラー登録
+    └── types.ts          # 型定義
 ```
 
 ### `src/lib/`

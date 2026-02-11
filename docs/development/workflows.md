@@ -35,6 +35,20 @@ bun test
 bun test tests/date-parser.test.ts
 ```
 
+## コミットメッセージ
+
+[Conventional Commits](https://www.conventionalcommits.org/) に従ってください。
+
+| プレフィックス | 用途 |
+| --- | --- |
+| `feat:` | 新機能 |
+| `fix:` | バグ修正・機能変更を伴う修正 |
+| `lint:` | lint についての修正（`lint&fix:` もよく用いる） |
+| `refac:` | コードの再構築（狭義リファクタリング．動作変更なし） |
+| `rec:` | コードの再構築（広義リファクタリング．動作変更あり） |
+| `docs:` | ドキュメントの変更のみ |
+| `chore:` | 小さな変更（他のプレフィックスに該当しないもの） |
+
 <!-- ## CI/CD (GitHub Actions)
 
 Pull Request 作成時に、自動的に以下のジョブが実行されます（設定されている場合）。

@@ -30,10 +30,20 @@ vll25bot の開発におけるアーキテクチャ上のルールです。
 - これは `src/core/loader.ts` が動的にモジュールをロードする際の仕様です。
 
 ## コーディング規約
+
 - **命名規則**:
     - クラス: PascalCase (`ReminderRepository`)
     - ファイル: kebab-case (`reminder-repository.ts`)
     - 関数/変数: camelCase (`findUserById`)
+    - 定数: UPPER_SNAKE_CASE (`CHECK_INTERVAL_MS`)
 - **エラー処理**:
     - 予期しないエラーは例外をスローし、トップレベル（Command実行部）で catch してユーザーにエラーメッセージを返してください。
     - ログを適切に記録してください（`src/lib/logger.ts` を使用してください）。
+- **マジックナンバー禁止**:
+    - 意味のある数値・文字列リテラルは名前付き定数にしてください。
+    - 定数は `src/features/[feature]/constants.ts` に集約してください。
+    - 許容例: `/ 1000`（Unix timestamp変換）、`parseInt(..., 10)`、`0`, `1`, `-1`
+- **ハンドラーID規約**:
+    - カスタムIDの定数は `:` を含めず、連結時に `:` を付与してください。
+    - `idPrefix` は文字列リテラルではなく、必ず定数を使用してください。
+    - 命名: `BUTTON_ID_[FEATURE]_[ACTION]`, `MODAL_ID_[FEATURE]_[ACTION]` 等

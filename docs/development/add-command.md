@@ -54,10 +54,14 @@
    以下のような構成を推奨します。
    ```
    src/features/new-feature/
-   ├── commands/     # Slash Command
-   ├── handlers/     # Button/Modal Handler
-   ├── services/     # ロジック
-   └── index.ts      # エントリーポイント
+   ├── commands/      # Slash Command
+   ├── handlers/      # Button/Modal Handler
+   ├── services/      # ロジック
+   ├── components/    # UIコンポーネント (Embed, Button, Modal)
+   ├── utils/         # 機能固有のユーティリティ
+   ├── constants.ts   # 定数定義 (ID, カラー, タイマー等)
+   ├── types.ts       # 型定義
+   └── setup.ts       # イベントハンドラー登録 (必要な場合)
    ```
 
 3. **実装**

@@ -27,7 +27,7 @@
 管理者向けドキュメントも見ておくとよいでしょう．
 
 - **[CONTRIBUTING](docs/CONTRIBUTING.md)**
-- [開発ガイド (ディレクトリ構成・ルール)](docs/development/index.md)
+- [開発ガイド (ディレクトリ構成・ルール)](docs/CONTRIBUTING.md)
 
 ## バージョン
 
