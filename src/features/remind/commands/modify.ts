@@ -56,7 +56,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     if (!interaction.guildId) return;
 
-    // 1. Validation
+    // 1. リマインダー検証
     const validation = await validateReminderForUpdate(
         id,
         interaction.user.id,
@@ -70,7 +70,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    // 2. DateTime Validation
+    // 2. 日時検証
     const dateValidation = validateDateTimeInput(datetimeStr);
     if (!dateValidation.success) {
         await interaction.reply({
@@ -80,7 +80,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    // 3. Check Updates
+    // 3. 変更項目の確認
     if (!newMessage && !dateValidation.date && !newChannel) {
         await interaction.reply({
             content: "❌ 変更する項目を少なくとも1つ指定してください。",
@@ -89,7 +89,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    // 4. Update
+    // 4. 更新実行
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const updated = await reminderService.update(id, {
@@ -105,14 +105,14 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    // 5. Build Changes
+    // 5. 変更内容生成
     const changes = buildChangesArray({
         message: newMessage,
         remindAt: dateValidation.date,
         channelId: newChannel?.id,
     });
 
-    // 6. Update Original Message
+    // 6. 元メッセージを更新
     if (updated.replyMessageId && updated.replyChannelId) {
         try {
             const channel = await interaction.client.channels.fetch(
@@ -129,11 +129,11 @@ async function execute(interaction: ChatInputCommandInteraction) {
                 });
             }
         } catch (error) {
-            // Ignore
+            // 元メッセージが見つからない場合などは無視
         }
     }
 
-    // 7. Reply
+    // 7. 応答
     const responseEmbed = buildUpdateResponseEmbed(updated, changes);
 
     await interaction.editReply({

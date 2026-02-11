@@ -31,10 +31,6 @@ export class CustomClient extends Client {
     }
 
     public async init() {
-        // Load features
-        // src/index.ts から呼ばれることを想定して、ここからの相対パスではなく
-        // プロジェクトルート(process.cwd())または__dirnameを基準にする
-        // client.ts は src/core/ にあるので、features は ../features つまり src/features
         const featuresPath = join(process.cwd(), "src", "features");
 
         try {
@@ -45,10 +41,8 @@ export class CustomClient extends Client {
             throw error;
         }
 
-        // Register event listeners
         this.registerEvents();
 
-        // Login
         await this.login(env.DISCORD_TOKEN);
     }
 

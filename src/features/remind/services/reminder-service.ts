@@ -35,14 +35,10 @@ export class ReminderService {
     private startScheduler() {
         if (this.checkInterval) clearInterval(this.checkInterval);
 
-        if (this.checkInterval) clearInterval(this.checkInterval);
-
-        // 1分ごとにチェック
         this.checkInterval = setInterval(() => {
             this.checkReminders();
         }, CHECK_INTERVAL_MS);
 
-        // 初回チェック
         setTimeout(() => this.checkReminders(), INITIAL_CHECK_DELAY_MS);
     }
 
@@ -75,7 +71,7 @@ export class ReminderService {
 
             return reminder;
         } catch (error) {
-            logger.error("❌ Failed to create reminder:", error);
+            logger.error("❌ リマインダー作成失敗:", error);
             return null;
         }
     }

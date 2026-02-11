@@ -111,3 +111,38 @@ idPrefix: BUTTON_ID_REMIND_EDIT,
 | Catch-all | `[FEATURE]_CATCH_ALL_PREFIX` | `LIST_NAV_CATCH_ALL_PREFIX` |
 
 4. **Registry resolution**: `idPrefix` is matched by `split(":")[0]` exact match first, then `startsWith` fallback. Keep `idPrefix` values `:` -free so they resolve in the first pass.
+
+---
+
+## Language Policy — Japanese Only
+
+All human-readable text in the codebase MUST be written in **Japanese**.
+
+| Target | Example |
+| --- | --- |
+| Code comments (`//`, `/* */`) | `// リマインダーの検証` |
+| JSDoc (`/** */`) | `/** リマインダーを削除する */` |
+| Log messages (`logger.*`) | `logger.error("❌ 作成に失敗:")` |
+| `throw new Error(...)` messages | `throw new Error("作成に失敗しました")` |
+| `console.*` messages | `console.error("❌ 環境変数が不正です")` |
+
+### ❌ Prohibited
+
+```typescript
+// Generate SET clause
+logger.error("Failed to create reminder:", error);
+throw new Error("Failed to find reminder");
+```
+
+### ✅ Correct
+
+```typescript
+// SET句を生成
+logger.error("❌ リマインダーの作成に失敗:", error);
+throw new Error("リマインダーの検索に失敗しました");
+```
+
+### Exceptions (English allowed)
+- Type names, variable names, function names (follow Naming Conventions)
+- EBNF grammar definitions (when quoting technical specs)
+- Library API names or property name references

@@ -38,7 +38,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
             await show.execute(interaction);
             break;
         default:
-            // Should not happen
+            // 通常到達しない
             break;
     }
 }

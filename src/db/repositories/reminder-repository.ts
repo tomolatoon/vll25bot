@@ -37,8 +37,8 @@ export class ReminderRepository {
             );
             return reminder;
         } catch (error) {
-            logger.error("Failed to create reminder:", error);
-            throw new Error("Failed to create reminder");
+            logger.error("❌ リマインダーの作成に失敗:", error);
+            throw new Error("リマインダーの作成に失敗しました");
         }
     }
 
@@ -50,8 +50,8 @@ export class ReminderRepository {
             );
             return row;
         } catch (error) {
-            logger.error(`Failed to find reminder by id ${id}:`, error);
-            throw new Error("Failed to find reminder");
+            logger.error(`❌ リマインダーの検索に失敗 (id=${id}):`, error);
+            throw new Error("リマインダーの検索に失敗しました");
         }
     }
 
@@ -81,18 +81,16 @@ export class ReminderRepository {
 
             return db.query<Reminder>(sql, params);
         } catch (error) {
-            logger.error("Failed to find reminders:", error);
-            throw new Error("Failed to find reminders");
+            logger.error("❌ リマインダー一覧の取得に失敗:", error);
+            throw new Error("リマインダー一覧の取得に失敗しました");
         }
     }
 
     async update(id: string, data: Partial<ReminderData>): Promise<void> {
-        // Generate SET clause
         const updates: string[] = [];
         const params: (string | number | null)[] = [];
 
         for (const [key, value] of Object.entries(data)) {
-            // Skip undefined values
             if (value !== undefined) {
                 updates.push(`${key} = ?`);
                 params.push(value);
@@ -107,8 +105,8 @@ export class ReminderRepository {
         try {
             db.run(sql, params);
         } catch (error) {
-            logger.error(`Failed to update reminder ${id}:`, error);
-            throw new Error("Failed to update reminder");
+            logger.error(`❌ リマインダーの更新に失敗 (id=${id}):`, error);
+            throw new Error("リマインダーの更新に失敗しました");
         }
     }
 
@@ -116,19 +114,15 @@ export class ReminderRepository {
         try {
             db.run("DELETE FROM reminders WHERE id = ?", [id]);
         } catch (error) {
-            logger.error(`Failed to delete reminder ${id}:`, error);
-            throw new Error("Failed to delete reminder");
+            logger.error(`❌ リマインダーの削除に失敗 (id=${id}):`, error);
+            throw new Error("リマインダーの削除に失敗しました");
         }
     }
 
     /**
-     * Delete reminders matching the filter.
-     * Returns the number of deleted rows (not supported by bun:sqlite standard run? We might need to check changes)
-     * bun:sqlite's db.run does not return changes easily in wrapper.
-     * For now, we return void or rely on a generic delete.
-     * We will check how to get changes if needed, but the interface said return number.
-     * If bun:sqlite/better-sqlite3 compatible `run` returns info, we can use it.
-     * existing client `run` returns void. We will stick to void or implement changes check.
+     * フィルタ条件に一致するリマインダーを一括削除する
+     *
+     * @remarks bun:sqlite の run() は削除件数を返さないため、戻り値は void
      */
     async deleteMany(filter: FilterOptions): Promise<void> {
         try {
@@ -143,13 +137,11 @@ export class ReminderRepository {
                 sql += " AND guildId = ?";
                 params.push(filter.guildId);
             }
-            // Safety check: Don't delete everything if filter is empty unless intended?
-            // For now assume caller knows what they are doing.
 
             db.run(sql, params);
         } catch (error) {
-            logger.error("Failed to delete reminders:", error);
-            throw new Error("Failed to delete reminders");
+            logger.error("❌ リマインダーの一括削除に失敗:", error);
+            throw new Error("リマインダーの一括削除に失敗しました");
         }
     }
 }

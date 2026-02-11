@@ -118,7 +118,7 @@ export function buildErrorEmbed(message: string): EmbedBuilder {
 }
 
 /**
- * リマインダー情報のEmbedを生成 (Legacy support/Generic use)
+ * リマインダー情報のEmbedを生成（汎用）
  */
 export function buildReminderEmbed(
     reminder: Reminder,
@@ -158,7 +158,7 @@ export function buildExecutedReminderEmbed(reminder: Reminder): EmbedBuilder {
     const unixTime = Math.floor(remindAt.getTime() / 1000);
 
     return new EmbedBuilder()
-        .setColor(REMIND_COLOR_INFO) // 青
+        .setColor(REMIND_COLOR_INFO)
         .setTitle("🚀 リマインダーを送信しました！")
         .setDescription(`${reminder.message}\n\u200b`)
         .addFields(

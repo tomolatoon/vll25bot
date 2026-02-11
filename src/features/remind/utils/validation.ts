@@ -72,10 +72,7 @@ export function validateDateTimeInput(
 export function buildChangesArray(updates: {
     message?: string;
     remindAt?: Date;
-    channelId?: string; // channel object replaced by ID or resolved later? Input was Channel object in original
-    // But here we might just want to show channel info.
-    // Original passed TextChannel object to get ID and Name.
-    // If we only have ID, we format <#ID>.
+    channelId?: string;
 }): string[] {
     const changes: string[] = [];
 

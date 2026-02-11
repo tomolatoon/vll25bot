@@ -35,7 +35,10 @@ export class Loader {
                     logger.info("📂 セットアップを登録しました");
                 }
             } catch (error) {
-                logger.error(`❌ Failed to load setup ${setupPath}:`, error);
+                logger.error(
+                    `❌ セットアップの読み込みに失敗: ${setupPath}`,
+                    error,
+                );
             }
         }
 
@@ -101,7 +104,10 @@ export class Loader {
                     // 必要であれば名前付きエクスポートも確認するが、ルールとしてデフォルトエクスポートを使用する
                 }
             } catch (error) {
-                logger.error(`❌ Failed to load module ${filePath}:`, error);
+                logger.error(
+                    `❌ モジュールの読み込みに失敗: ${filePath}`,
+                    error,
+                );
             }
         }
     }
@@ -115,7 +121,7 @@ export class Loader {
         }
     }
 
-    // Type Guards
+    // 型ガード
     private isCommand(obj: unknown): obj is Command {
         return (
             typeof obj === "object" &&

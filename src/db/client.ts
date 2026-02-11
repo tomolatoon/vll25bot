@@ -55,7 +55,7 @@ export class DatabaseClient {
 
             if (!hasReplyMessageId) {
                 logger.info(
-                    "🔄 Migration: Adding replyMessageId, replyChannelId columns...",
+                    "🔄 マイグレーション: replyMessageId, replyChannelId カラムを追加中...",
                 );
                 this.db.run(
                     "ALTER TABLE reminders ADD COLUMN replyMessageId TEXT",
@@ -63,10 +63,10 @@ export class DatabaseClient {
                 this.db.run(
                     "ALTER TABLE reminders ADD COLUMN replyChannelId TEXT",
                 );
-                logger.info("✅ Migration complete");
+                logger.info("✅ マイグレーション完了");
             }
         } catch (error) {
-            logger.error("❌ Migration failed:", error);
+            logger.error("❌ マイグレーション失敗:", error);
         }
     }
 
@@ -89,5 +89,5 @@ export class DatabaseClient {
     }
 }
 
-// Singleton export
+// シングルトン
 export const db = DatabaseClient.getInstance();

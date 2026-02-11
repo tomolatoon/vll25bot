@@ -1,16 +1,14 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-    DISCORD_TOKEN: z.string().min(1, "DISCORD_TOKEN is required"),
+    DISCORD_TOKEN: z.string().min(1, "DISCORD_TOKEN は必須です"),
     DATABASE_URL: z.string().optional(),
-    // Add other environment variables here as needed
 });
 
-// Validate process.env
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-    console.error("❌ Invalid environment variables:", parsed.error.format());
+    console.error("❌ 環境変数が不正です:", parsed.error.format());
     process.exit(1);
 }
 
