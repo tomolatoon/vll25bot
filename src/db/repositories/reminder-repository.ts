@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import { DatabaseError } from "@db/errors";
+import { ConcurrencyError, DatabaseError } from "@db/errors";
 import type { FilterOptions, Reminder, ReminderData } from "@db/types";
 import { logger } from "@utils/logger";
 import { v4 as uuidv4 } from "uuid";
@@ -17,13 +17,14 @@ export class ReminderRepository {
             ...data,
             replyMessageId: data.replyMessageId ?? null,
             replyChannelId: data.replyChannelId ?? null,
+            version: 0,
         };
 
         try {
             db.run(
                 `INSERT INTO reminders (
-                    id, channelId, message, remindAt, createdAt, createdBy, guildId, replyMessageId, replyChannelId
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    id, channelId, message, remindAt, createdAt, createdBy, guildId, replyMessageId, replyChannelId, version
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     reminder.id,
                     reminder.channelId,
@@ -34,6 +35,7 @@ export class ReminderRepository {
                     reminder.guildId,
                     reminder.replyMessageId ?? null,
                     reminder.replyChannelId ?? null,
+                    reminder.version,
                 ],
             );
             return reminder;
@@ -109,14 +111,44 @@ export class ReminderRepository {
         // 更新がない場合は既存のデータを返す
         if (updates.length === 0) return existing;
 
+        // version を自動インクリメント（楽観的ロック）
+        updates.push("version = version + 1");
+
+        // WHERE 句で現在の version を確認
         params.push(id);
-        const sql = `UPDATE reminders SET ${updates.join(", ")} WHERE id = ?`;
+        params.push(existing.version);
+
+        const sql = `UPDATE reminders SET ${updates.join(", ")} WHERE id = ? AND version = ?`;
 
         try {
-            db.run(sql, params);
+            const result = db.run(sql, params);
+
+            // 更新行数が 0 の場合は version が一致しない = 他のリクエストが更新済み
+            if (result.changes === 0) {
+                throw new ConcurrencyError(
+                    "リマインダーが他のユーザーによって更新されました。最新のデータを取得してください。",
+                );
+            }
+
+            // undefined の値を除外してから更新後のオブジェクトを構築
+            const cleanedData: Partial<ReminderData> = {};
+            for (const [key, value] of Object.entries(data)) {
+                if (value !== undefined) {
+                    cleanedData[key as keyof ReminderData] = value as never;
+                }
+            }
+
             // 更新後のオブジェクトを構築して返す（DB再取得を回避）
-            return { ...existing, ...data };
+            return {
+                ...existing,
+                ...cleanedData,
+                version: existing.version + 1,
+            };
         } catch (error) {
+            // ConcurrencyError はそのまま再スロー
+            if (error instanceof ConcurrencyError) {
+                throw error;
+            }
             logger.error(`❌ リマインダーの更新に失敗 (id=${id}):`, error);
             throw new DatabaseError("リマインダーの更新に失敗しました", error);
         }

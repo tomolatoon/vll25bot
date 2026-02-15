@@ -1,4 +1,5 @@
 import type { ModalHandler } from "@core/types";
+import { ConcurrencyError } from "@db/errors";
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import { buildReminderButtons } from "../components/actions";
 import {
@@ -27,43 +28,60 @@ const editModalHandler: ModalHandler = {
             return;
         }
 
-        // 変更内容を特定するために元のデータを取得
-        const original = await reminderService.getReminderById(reminderId);
+        try {
+            // 変更内容を特定するために元のデータを取得
+            const original = await reminderService.getReminderById(reminderId);
 
-        // 更新
-        const updated = await reminderService.update(reminderId, {
-            message: newMessage,
-            remindAt: dateValidation.date?.getTime(),
-        });
+            // 更新
+            const updated = await reminderService.update(reminderId, {
+                message: newMessage,
+                remindAt: dateValidation.date?.getTime(),
+            });
 
-        if (!updated || !original) {
+            if (!updated || !original) {
+                await interaction.reply({
+                    content:
+                        "❌ リマインダーの更新に失敗しました（見つからないか、権限がありません）。",
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
+
+            // 変更内容のリスト作成
+            const changes = buildChangesArray({
+                message: original.message !== newMessage ? newMessage : undefined,
+                remindAt:
+                    original.remindAt !==
+                    (dateValidation.date?.getTime() ?? original.remindAt)
+                        ? dateValidation.date
+                        : undefined,
+            });
+
+            // 元のメッセージを更新（ID表示など）
+            await reminderService.updateOriginalMessageAsEdited(updated);
+
+            const responseEmbed = buildUpdateResponseEmbed(updated, changes);
+
             await interaction.reply({
-                content:
-                    "❌ リマインダーの更新に失敗しました（見つからないか、権限がありません）。",
+                embeds: [responseEmbed],
                 flags: MessageFlags.Ephemeral,
             });
-            return;
+        } catch (error) {
+            // 楽観的ロック競合エラー
+            if (error instanceof ConcurrencyError) {
+                await interaction.reply({
+                    content:
+                        "⚠️ このリマインダーは他のユーザーによって更新されました。\n最新のデータを確認してから再度編集してください。",
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            // その他のエラー
+            await interaction.reply({
+                content: "❌ 予期しないエラーが発生しました。",
+                flags: MessageFlags.Ephemeral,
+            });
         }
-
-        // 変更内容のリスト作成
-        const changes = buildChangesArray({
-            message: original.message !== newMessage ? newMessage : undefined,
-            remindAt:
-                original.remindAt !==
-                (dateValidation.date?.getTime() ?? original.remindAt)
-                    ? dateValidation.date
-                    : undefined,
-        });
-
-        // 元のメッセージを更新（ID表示など）
-        await reminderService.updateOriginalMessageAsEdited(updated);
-
-        const responseEmbed = buildUpdateResponseEmbed(updated, changes);
-
-        await interaction.reply({
-            embeds: [responseEmbed],
-            flags: MessageFlags.Ephemeral,
-        });
     },
 };
 

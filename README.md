@@ -28,10 +28,12 @@
 
 - **[CONTRIBUTING](docs/CONTRIBUTING.md)**
 - [開発ガイド (ディレクトリ構成・ルール)](docs/CONTRIBUTING.md)
+- [データベース設計](docs/development/database.md)
+- [トランザクションと楽観的ロック](docs/development/transaction-and-locking.md)
 
 ## バージョン
 
-v2.0.0 (2026/02/10)
+v2.1.0 (2026/02/15)
 
 - [バージョン履歴はこちらから](docs/history.md)
 

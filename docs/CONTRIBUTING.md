@@ -16,6 +16,14 @@ Bot の機能追加や修正を行うためのガイドラインです。
 - **[アーキテクチャルール (Rules)](development/rules.md)**
     - Feature層、Core層、DB層の依存関係ルール
     - **必読**: import の制限事項について
+- **[データベース設計 (Database)](development/database.md)**
+    - データベーススキーマとマイグレーション
+    - Repository パターンの使い方
+    - エラーハンドリング
+- **[トランザクションと楽観的ロック (Transaction & Locking)](development/transaction-and-locking.md)**
+    - トランザクション処理の実装方法
+    - 楽観的ロックによる同時更新の競合検出
+    - ベストプラクティス
 - **[コマンドの追加方法 (Add Command)](development/add-command.md)**
     - 新しいスラッシュコマンドを追加する手順
     - `features/misc` と `features/*` の使い分け基準

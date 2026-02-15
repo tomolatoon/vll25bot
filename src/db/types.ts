@@ -18,6 +18,8 @@ export interface Reminder {
     guildId: string;
     replyMessageId?: string | null;
     replyChannelId?: string | null;
+    /** 楽観的ロック用バージョン番号 */
+    version: number;
 }
 
 /** リマインダー作成時のデータ（id, createdAt は自動生成） */

@@ -1,4 +1,5 @@
 import { ReminderRepository } from "@db/repositories/reminder-repository";
+import { ConcurrencyError } from "@db/errors";
 import { logger } from "@utils/logger";
 import type { Client, TextChannel } from "discord.js";
 import {
@@ -162,6 +163,11 @@ export class ReminderService {
 
             return updated;
         } catch (error) {
+            // 楽観的ロック競合エラーは呼び出し元で処理するため再スロー
+            if (error instanceof ConcurrencyError) {
+                logger.warn(`⚠️ 競合検出: ${id} - ${error.message}`);
+                throw error;
+            }
             logger.error("❌ リマインダー更新失敗:", error);
             return null;
         }
