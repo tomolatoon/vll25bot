@@ -1,4 +1,5 @@
 import { db } from "@db/client";
+import { DatabaseError } from "@db/errors";
 import type { FilterOptions, Reminder, ReminderData } from "@db/types";
 import { logger } from "@utils/logger";
 import { v4 as uuidv4 } from "uuid";
@@ -38,7 +39,7 @@ export class ReminderRepository {
             return reminder;
         } catch (error) {
             logger.error("❌ リマインダーの作成に失敗:", error);
-            throw new Error("リマインダーの作成に失敗しました");
+            throw new DatabaseError("リマインダーの作成に失敗しました", error);
         }
     }
 
@@ -50,8 +51,9 @@ export class ReminderRepository {
             );
             return row;
         } catch (error) {
+            // DB操作自体が失敗した場合（レコードが見つからない場合は正常に null を返す）
             logger.error(`❌ リマインダーの検索に失敗 (id=${id}):`, error);
-            throw new Error("リマインダーの検索に失敗しました");
+            throw new DatabaseError("リマインダーの検索に失敗しました", error);
         }
     }
 
@@ -82,11 +84,18 @@ export class ReminderRepository {
             return db.query<Reminder>(sql, params);
         } catch (error) {
             logger.error("❌ リマインダー一覧の取得に失敗:", error);
-            throw new Error("リマインダー一覧の取得に失敗しました");
+            throw new DatabaseError("リマインダー一覧の取得に失敗しました", error);
         }
     }
 
-    async update(id: string, data: Partial<ReminderData>): Promise<void> {
+    async update(
+        id: string,
+        data: Partial<ReminderData>,
+    ): Promise<Reminder | null> {
+        // 更新前のデータを取得
+        const existing = await this.findById(id);
+        if (!existing) return null;
+
         const updates: string[] = [];
         const params: (string | number | null)[] = [];
 
@@ -97,16 +106,19 @@ export class ReminderRepository {
             }
         }
 
-        if (updates.length === 0) return;
+        // 更新がない場合は既存のデータを返す
+        if (updates.length === 0) return existing;
 
         params.push(id);
         const sql = `UPDATE reminders SET ${updates.join(", ")} WHERE id = ?`;
 
         try {
             db.run(sql, params);
+            // 更新後のオブジェクトを構築して返す（DB再取得を回避）
+            return { ...existing, ...data };
         } catch (error) {
             logger.error(`❌ リマインダーの更新に失敗 (id=${id}):`, error);
-            throw new Error("リマインダーの更新に失敗しました");
+            throw new DatabaseError("リマインダーの更新に失敗しました", error);
         }
     }
 
@@ -115,7 +127,7 @@ export class ReminderRepository {
             db.run("DELETE FROM reminders WHERE id = ?", [id]);
         } catch (error) {
             logger.error(`❌ リマインダーの削除に失敗 (id=${id}):`, error);
-            throw new Error("リマインダーの削除に失敗しました");
+            throw new DatabaseError("リマインダーの削除に失敗しました", error);
         }
     }
 
@@ -141,7 +153,7 @@ export class ReminderRepository {
             db.run(sql, params);
         } catch (error) {
             logger.error("❌ リマインダーの一括削除に失敗:", error);
-            throw new Error("リマインダーの一括削除に失敗しました");
+            throw new DatabaseError("リマインダーの一括削除に失敗しました", error);
         }
     }
 }

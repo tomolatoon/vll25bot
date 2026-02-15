@@ -7,6 +7,7 @@
  *   bun run clear --global --guild  両方を削除
  */
 
+import { logger } from "@utils/logger";
 import { REST, Routes } from "discord.js";
 
 const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = Bun.env;
@@ -31,23 +32,23 @@ const help = () => `📖 使い方:
 `;
 
 const deleteGuildCommands = async (guild_id: string) => {
-    console.log(`🗑️ ギルド（${guild_id}）のコマンドを削除中...`);
+    logger.info(`🗑️ ギルド（${guild_id}）のコマンドを削除中...`);
     await rest.put(Routes.applicationGuildCommands(CLIENT_ID, guild_id), {
         body: [],
     });
-    console.log("✅ ギルドコマンドを削除しました");
+    logger.info("✅ ギルドコマンドを削除しました");
 };
 
 const deleteGlobalCommands = async () => {
-    console.log("🗑️ グローバルコマンドを削除中...");
+    logger.info("🗑️ グローバルコマンドを削除中...");
     await rest.put(Routes.applicationCommands(CLIENT_ID), { body: [] });
-    console.log("✅ グローバルコマンドを削除しました");
-    console.log("⏳ 反映には最大1時間かかる場合があります");
+    logger.info("✅ グローバルコマンドを削除しました");
+    logger.info("⏳ 反映には最大1時間かかる場合があります");
 };
 
 // オプションが無い場合はヘルプを表示
 if (!clearGlobal && !clearGuild) {
-    console.log(help());
+    logger.info(help());
     process.exit(0);
 }
 
@@ -58,13 +59,13 @@ try {
 
     if (clearGuild) {
         if (!GUILD_ID) {
-            console.error("❌ GUILD_ID が設定されていません");
+            logger.error("❌ GUILD_ID が設定されていません");
             process.exit(1);
         }
         await deleteGuildCommands(GUILD_ID);
     }
 
-    console.log("\n💡 コマンドを再登録するには: bun run deploy");
+    logger.info("\n💡 コマンドを再登録するには: bun run deploy");
 } catch (error) {
-    console.error("❌ 削除に失敗しました:\n", error);
+    logger.error("❌ 削除に失敗しました:\n", error);
 }

@@ -10,6 +10,7 @@
 import { join } from "node:path";
 import { Loader } from "@core/loader";
 import { Registry } from "@core/registry";
+import { logger } from "@utils/logger";
 import { REST, Routes } from "discord.js";
 
 // 環境変数（Bunは.envを自動で読み込む）
@@ -46,16 +47,16 @@ const loadCommands = async () => {
 const rest = new REST().setToken(DISCORD_TOKEN);
 
 const deployToGlobal = async (commands: unknown[]) => {
-    console.log(`🔄 ${commands.length}個のコマンドをグローバルに登録中...`);
+    logger.info(`🔄 ${commands.length}個のコマンドをグローバルに登録中...`);
     const data = (await rest.put(Routes.applicationCommands(CLIENT_ID), {
         body: commands,
     })) as unknown[];
-    console.log(`✅ ${data.length}個のグローバルコマンドを登録しました！`);
-    console.log("⏳ 反映に最大1時間かかります");
+    logger.info(`✅ ${data.length}個のグローバルコマンドを登録しました！`);
+    logger.info("⏳ 反映に最大1時間かかります");
 };
 
 const deployToGuild = async (guild_id: string, commands: unknown[]) => {
-    console.log(
+    logger.info(
         `🔄 ${commands.length}個のコマンドをギルド（${guild_id}）に登録中...`,
     );
     const data = (await rest.put(
@@ -64,13 +65,13 @@ const deployToGuild = async (guild_id: string, commands: unknown[]) => {
             body: commands,
         },
     )) as unknown[];
-    console.log(`✅ ${data.length}個のギルドコマンドを登録しました！`);
-    console.log("⚡ 即座に反映されます");
+    logger.info(`✅ ${data.length}個のギルドコマンドを登録しました！`);
+    logger.info("⚡ 即座に反映されます");
 };
 
 // オプションが無い場合はヘルプを表示
 if (!deployGlobal && !deployGuild) {
-    console.log(help());
+    logger.info(help());
     process.exit(0);
 }
 
@@ -84,13 +85,13 @@ const main = async () => {
 
         if (deployGuild) {
             if (!GUILD_ID) {
-                console.error("❌ GUILD_ID が設定されていません");
+                logger.error("❌ GUILD_ID が設定されていません");
                 process.exit(1);
             }
             await deployToGuild(GUILD_ID, commands);
         }
     } catch (error) {
-        console.error("❌ 登録失敗:", error);
+        logger.error("❌ 登録失敗:", error);
     }
 };
 

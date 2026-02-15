@@ -3,6 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
     DISCORD_TOKEN: z.string().min(1, "DISCORD_TOKEN は必須です"),
     DATABASE_URL: z.string().optional(),
+    LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(7),
 });
 
 const parsed = envSchema.safeParse(process.env);

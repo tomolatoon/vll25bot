@@ -9,6 +9,6 @@
 import type { Client } from "discord.js";
 import { registerForwardCleanupHandler } from "./handlers/forward-cleanup";
 
-export async function setup(client: Client): Promise<void> {
+export default async function setup(client: Client): Promise<void> {
     registerForwardCleanupHandler(client);
 }

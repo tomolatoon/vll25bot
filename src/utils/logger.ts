@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { env } from "@config/env";
 
 /**
  * ログレベル定義
@@ -19,6 +20,9 @@ class Logger {
             fs.mkdirSync(logsDir, { recursive: true });
         }
 
+        // 古いログファイルを削除
+        this.cleanupOldLogs(logsDir);
+
         const now = new Date();
         const timestamp = now
             .toLocaleString("ja-JP", {
@@ -35,6 +39,43 @@ class Logger {
         this.logFilePath = path.join(logsDir, `app_${timestamp}.log`);
 
         this.log(`ログ出力を開始します: ${this.logFilePath}`);
+    }
+
+    /**
+     * 古いログファイルを削除する
+     */
+    private cleanupOldLogs(logsDir: string) {
+        try {
+            const files = fs.readdirSync(logsDir);
+            const now = Date.now();
+            const retentionMs = env.LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+            let deletedCount = 0;
+            for (const file of files) {
+                // app_*.log のファイルのみ対象
+                if (!file.startsWith("app_") || !file.endsWith(".log")) {
+                    continue;
+                }
+
+                const filePath = path.join(logsDir, file);
+                const stats = fs.statSync(filePath);
+                const fileAge = now - stats.mtimeMs;
+
+                // 保持期間を超えたファイルを削除
+                if (fileAge > retentionMs) {
+                    fs.unlinkSync(filePath);
+                    deletedCount++;
+                }
+            }
+
+            if (deletedCount > 0) {
+                console.log(
+                    `🗑️  古いログファイルを ${deletedCount} 件削除しました（保持期間: ${env.LOG_RETENTION_DAYS}日）`,
+                );
+            }
+        } catch (error) {
+            console.error("古いログファイルの削除に失敗しました:", error);
+        }
     }
 
     /**

@@ -10,7 +10,7 @@ import type { Client } from "discord.js";
 import { migrationService } from "./services/migration";
 import { reminderService } from "./services/reminder-service";
 
-export async function setup(client: Client): Promise<void> {
+export default async function setup(client: Client): Promise<void> {
     reminderService.setClient(client);
     await migrationService.restoreFromJson();
 }

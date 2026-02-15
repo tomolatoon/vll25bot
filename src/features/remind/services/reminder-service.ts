@@ -148,11 +148,9 @@ export class ReminderService {
             // 既存のスケジュールタスクをクリア
             this.clearScheduledTask(id);
 
-            await this.repository.update(id, updates);
-
-            // 完全なオブジェクトを返し、再スケジュールするために更新後のリマインダーを取得
-            const updated = await this.repository.findById(id);
-            if (!updated) return null; // 発生しないはず
+            // 更新を実行（更新後のオブジェクトが返される）
+            const updated = await this.repository.update(id, updates);
+            if (!updated) return null;
 
             // 再スケジュール
             if (updates.remindAt) {
