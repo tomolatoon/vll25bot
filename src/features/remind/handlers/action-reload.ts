@@ -1,4 +1,5 @@
 import type { ButtonHandler } from "@core/types";
+import { logger } from "@utils/logger";
 import { type ButtonInteraction, EmbedBuilder } from "discord.js";
 import { buildReminderButtons } from "../components/actions";
 import {
@@ -18,6 +19,9 @@ export const reloadHandler: ButtonHandler = {
         const reminder = await reminderService.getReminderById(reminderId);
 
         if (!reminder) {
+            logger.debug(
+                `リマインダーが見つかりません（解除済みの可能性）: ${reminderId}`,
+            );
             await interaction.editReply({
                 content: "",
                 embeds: [

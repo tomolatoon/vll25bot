@@ -1,5 +1,6 @@
-import { ReminderRepository } from "@db/repositories/reminder-repository";
 import { ConcurrencyError } from "@db/errors";
+import { ReminderRepository } from "@db/repositories/reminder-repository";
+import type { Reminder, ReminderData } from "@db/types";
 import { logger } from "@utils/logger";
 import type {
     ActionRowBuilder,
@@ -22,7 +23,6 @@ import {
     INITIAL_CHECK_DELAY_MS,
     SCHEDULE_BUFFER_MS,
 } from "../constants";
-import type { Reminder, ReminderData } from "@db/types";
 
 export class ReminderService {
     private static instance: ReminderService;
@@ -127,11 +127,9 @@ export class ReminderService {
     private async updateOriginalMessageAsCancelled(
         reminder: Reminder,
     ): Promise<void> {
-        await this.updateOriginalMessage(
-            reminder,
-            buildCancelEmbed(reminder),
-            [buildCancelledButtons(reminder.id)],
-        );
+        await this.updateOriginalMessage(reminder, buildCancelEmbed(reminder), [
+            buildCancelledButtons(reminder.id),
+        ]);
     }
 
     /**
@@ -237,6 +235,11 @@ export class ReminderService {
      */
     public async delete(id: string): Promise<void> {
         const reminder = await this.repository.findById(id);
+        if (!reminder) {
+            logger.debug(
+                `削除対象のリマインダーが見つかりません（既に削除済みの可能性）: ${id}`,
+            );
+        }
         await this.forceCancel(id);
         logger.info(`🗑️ リマインダーを削除しました: ${id}`);
 

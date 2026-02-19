@@ -55,7 +55,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
         logger.error("❌ /kanwa 実行エラー:", error);
         const content = "❌ コマンドの実行中にエラーが発生しました。";
         if (interaction.deferred || interaction.replied) {
-            await interaction.editReply({ content }).catch(() => {});
+            await interaction.editReply({ content }).catch((err: unknown) => {
+                logger.debug("❌ editReply に失敗（削除済みの可能性）:", err);
+            });
         } else {
             await interaction.reply({
                 content,

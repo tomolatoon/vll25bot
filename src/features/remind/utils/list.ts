@@ -1,3 +1,4 @@
+import type { Reminder } from "@db/types";
 import { logger } from "@utils/logger";
 import {
     LIST_NAV_NEXT_PREFIX,
@@ -5,7 +6,6 @@ import {
     LIST_ORDER_PREFIX,
     LIST_PREFIXES,
 } from "../constants";
-import type { Reminder } from "@db/types";
 
 export const REMINDERS_PER_PAGE = 5;
 

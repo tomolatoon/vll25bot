@@ -62,7 +62,8 @@ const editModalHandler: ModalHandler = {
 
             // 変更内容のリスト作成
             const changes = buildChangesArray({
-                message: original.message !== newMessage ? newMessage : undefined,
+                message:
+                    original.message !== newMessage ? newMessage : undefined,
                 remindAt:
                     original.remindAt !==
                     (dateValidation.date?.getTime() ?? original.remindAt)

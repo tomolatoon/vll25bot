@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import {
     ChannelType,
     type ChatInputCommandInteraction,
@@ -88,35 +89,40 @@ async function execute(interaction: ChatInputCommandInteraction) {
     // 4. 更新実行
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const updated = await reminderService.update(id, {
-        message: newMessage,
-        remindAt: dateValidation.date?.getTime(),
-        channelId: newChannel?.id,
-    });
-
-    if (!updated) {
-        await interaction.editReply({
-            content: "❌ リマインダーの更新に失敗しました。",
+    try {
+        const updated = await reminderService.update(id, {
+            message: newMessage,
+            remindAt: dateValidation.date?.getTime(),
+            channelId: newChannel?.id,
         });
-        return;
+
+        if (!updated) {
+            await interaction.editReply({
+                content: "❌ リマインダーの更新に失敗しました。",
+            });
+            return;
+        }
+
+        // 5. 変更内容生成
+        const changes = buildChangesArray({
+            message: newMessage,
+            remindAt: dateValidation.date,
+            channelId: newChannel?.id,
+        });
+
+        // 6. 元メッセージを更新
+        await reminderService.updateOriginalMessageAsEdited(updated);
+
+        // 7. 応答
+        const responseEmbed = buildUpdateResponseEmbed(updated, changes);
+
+        await interaction.editReply({
+            embeds: [responseEmbed],
+        });
+    } catch (error) {
+        logger.error("❌ modifyコマンド実行エラー:", error);
+        await interaction.editReply({ content: "❌ エラーが発生しました。" });
     }
-
-    // 5. 変更内容生成
-    const changes = buildChangesArray({
-        message: newMessage,
-        remindAt: dateValidation.date,
-        channelId: newChannel?.id,
-    });
-
-    // 6. 元メッセージを更新
-    await reminderService.updateOriginalMessageAsEdited(updated);
-
-    // 7. 応答
-    const responseEmbed = buildUpdateResponseEmbed(updated, changes);
-
-    await interaction.editReply({
-        embeds: [responseEmbed],
-    });
 }
 
 export default { data, execute };

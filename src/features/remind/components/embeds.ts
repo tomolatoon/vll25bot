@@ -1,3 +1,4 @@
+import type { Reminder } from "@db/types";
 import { EmbedBuilder } from "discord.js";
 import {
     LIST_MESSAGE_PREVIEW_LENGTH,
@@ -7,7 +8,6 @@ import {
     REMIND_COLOR_SUCCESS,
     REMIND_COLOR_WARN,
 } from "../constants";
-import type { Reminder } from "@db/types";
 import type { ListState } from "../utils/list";
 
 /**

@@ -1,6 +1,6 @@
+import type { Reminder } from "@db/types";
 import { parseFutureDateTime } from "@lib/parser/date-parser";
 import { reminderService } from "../services/reminder-service"; // シングルトンインスタンス
-import type { Reminder } from "@db/types";
 
 export type ValidationResult =
     | { success: true; reminder: Reminder }

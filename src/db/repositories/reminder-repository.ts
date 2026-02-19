@@ -86,7 +86,10 @@ export class ReminderRepository {
             return db.query<Reminder>(sql, params);
         } catch (error) {
             logger.error("❌ リマインダー一覧の取得に失敗:", error);
-            throw new DatabaseError("リマインダー一覧の取得に失敗しました", error);
+            throw new DatabaseError(
+                "リマインダー一覧の取得に失敗しました",
+                error,
+            );
         }
     }
 
@@ -185,7 +188,10 @@ export class ReminderRepository {
             db.run(sql, params);
         } catch (error) {
             logger.error("❌ リマインダーの一括削除に失敗:", error);
-            throw new DatabaseError("リマインダーの一括削除に失敗しました", error);
+            throw new DatabaseError(
+                "リマインダーの一括削除に失敗しました",
+                error,
+            );
         }
     }
 }

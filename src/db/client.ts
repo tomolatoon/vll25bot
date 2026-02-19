@@ -107,7 +107,10 @@ export class DatabaseClient {
         return this.db.query(sql).get(...params) as T | null;
     }
 
-    run(sql: string, params: (string | number | boolean | null)[] = []): {
+    run(
+        sql: string,
+        params: (string | number | boolean | null)[] = [],
+    ): {
         changes: number;
         lastInsertRowid: number | bigint;
     } {

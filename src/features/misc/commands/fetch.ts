@@ -126,10 +126,14 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
         // エラー時は editReply が使えない可能性があるため、チャンネルに直接送信
         if (interaction.channel && "send" in interaction.channel) {
-            await interaction.channel.send({
-                content:
-                    "❌ メッセージの取得に失敗しました。\nBotに適切な権限があるか確認してください。",
-            });
+            await interaction.channel
+                .send({
+                    content:
+                        "❌ メッセージの取得に失敗しました。\nBotに適切な権限があるか確認してください。",
+                })
+                .catch((sendError: unknown) => {
+                    logger.error("❌ エラーメッセージの送信に失敗:", sendError);
+                });
         }
     }
 }

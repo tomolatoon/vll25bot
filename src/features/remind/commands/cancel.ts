@@ -1,3 +1,4 @@
+import { logger } from "@utils/logger";
 import {
     type ChatInputCommandInteraction,
     MessageFlags,
@@ -22,36 +23,41 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const result = await reminderService.cancel(
-        id,
-        interaction.user.id,
-        interaction.guildId,
-    );
+    try {
+        const result = await reminderService.cancel(
+            id,
+            interaction.user.id,
+            interaction.guildId,
+        );
 
-    if (!result.success) {
-        if (result.reason === "not_owner") {
-            await interaction.editReply({
-                content: "❌ 自分が登録したリマインダーのみ解除できます。",
-            });
-        } else if (result.reason === "conflict") {
-            await interaction.editReply({
-                content:
-                    "⚠️ このリマインダーは他の操作と競合しました。最新の状態を確認してから再度お試しください。",
-            });
-        } else {
-            await interaction.editReply({
-                content: `❓ リマインダー \`${id}\` は既に解除済みか存在しません。`,
-            });
+        if (!result.success) {
+            if (result.reason === "not_owner") {
+                await interaction.editReply({
+                    content: "❌ 自分が登録したリマインダーのみ解除できます。",
+                });
+            } else if (result.reason === "conflict") {
+                await interaction.editReply({
+                    content:
+                        "⚠️ このリマインダーは他の操作と競合しました。最新の状態を確認してから再度お試しください。",
+                });
+            } else {
+                await interaction.editReply({
+                    content: `❓ リマインダー \`${id}\` は既に解除済みか存在しません。`,
+                });
+            }
+            return;
         }
-        return;
+
+        const { reminder } = result;
+
+        // 完了レスポンス
+        await interaction.editReply({
+            embeds: [buildCancelSuccessEmbed(reminder)],
+        });
+    } catch (error) {
+        logger.error("❌ cancelコマンド実行エラー:", error);
+        await interaction.editReply({ content: "❌ エラーが発生しました。" });
     }
-
-    const { reminder } = result;
-
-    // 完了レスポンス
-    await interaction.editReply({
-        embeds: [buildCancelSuccessEmbed(reminder)],
-    });
 }
 
 export default { data, execute };

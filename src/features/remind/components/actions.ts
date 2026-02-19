@@ -1,3 +1,4 @@
+import type { Reminder } from "@db/types";
 import {
     ActionRowBuilder,
     ButtonBuilder,
@@ -23,7 +24,6 @@ import {
     NUMBER_EMOJIS,
     SELECT_MESSAGE_PREVIEW_LENGTH,
 } from "../constants";
-import type { Reminder } from "@db/types";
 import { type ListState, encodeState } from "../utils/list";
 
 /**
