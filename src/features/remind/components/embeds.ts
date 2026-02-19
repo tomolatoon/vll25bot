@@ -7,7 +7,7 @@ import {
     REMIND_COLOR_SUCCESS,
     REMIND_COLOR_WARN,
 } from "../constants";
-import type { Reminder } from "../types";
+import type { Reminder } from "@db/types";
 import type { ListState } from "../utils/list";
 
 /**

@@ -1,7 +1,13 @@
 import { ReminderRepository } from "@db/repositories/reminder-repository";
 import { ConcurrencyError } from "@db/errors";
 import { logger } from "@utils/logger";
-import type { Client, TextChannel } from "discord.js";
+import type {
+    ActionRowBuilder,
+    Client,
+    EmbedBuilder,
+    MessageActionRowComponentBuilder,
+    TextChannel,
+} from "discord.js";
 import {
     buildCancelledButtons,
     buildReminderButtons,
@@ -16,7 +22,7 @@ import {
     INITIAL_CHECK_DELAY_MS,
     SCHEDULE_BUFFER_MS,
 } from "../constants";
-import type { Reminder, ReminderData } from "../types";
+import type { Reminder, ReminderData } from "@db/types";
 
 export class ReminderService {
     private static instance: ReminderService;
@@ -70,6 +76,7 @@ export class ReminderService {
                 guildId,
                 replyMessageId: options.replyMessageId,
                 replyChannelId: options.replyChannelId,
+                version: 0,
             });
 
             logger.info(
@@ -86,11 +93,12 @@ export class ReminderService {
     }
 
     /**
-     * キャンセル時に元のReplyメッセージを「キャンセル済み」Embedに更新する
-     * @param reminder - キャンセルされたリマインダー
+     * 元のReplyメッセージをembedとcomponentsで更新する
      */
-    private async updateOriginalMessageAsCancelled(
+    private async updateOriginalMessage(
         reminder: Reminder,
+        embed: EmbedBuilder,
+        components: ActionRowBuilder<MessageActionRowComponentBuilder>[],
     ): Promise<void> {
         if (
             !this.client ||
@@ -108,16 +116,22 @@ export class ReminderService {
                 const message = await channel.messages.fetch(
                     reminder.replyMessageId,
                 );
-
-                await message.edit({
-                    embeds: [buildCancelEmbed(reminder)],
-                    components: [buildCancelledButtons(reminder.id)],
-                });
+                await message.edit({ embeds: [embed], components });
             }
         } catch (error) {
             // メッセージが見つからない場合などは無視
             logger.debug("元メッセージの更新に失敗（無視）:", error);
         }
+    }
+
+    private async updateOriginalMessageAsCancelled(
+        reminder: Reminder,
+    ): Promise<void> {
+        await this.updateOriginalMessage(
+            reminder,
+            buildCancelEmbed(reminder),
+            [buildCancelledButtons(reminder.id)],
+        );
     }
 
     /**
@@ -203,8 +217,11 @@ export class ReminderService {
 
             return { success: true, reminder };
         } catch (error) {
+            if (error instanceof ConcurrencyError) {
+                logger.warn(`⚠️ キャンセル競合検出: ${id} - ${error.message}`);
+                return { success: false, reason: "conflict" };
+            }
             logger.error("❌ リマインダー解除失敗:", error);
-            // falseを返すべきか、例外を投げるべきか？ 既存ロジックはboolean/resultを返していた
             return { success: false, reason: "error" };
         }
     }
@@ -261,36 +278,14 @@ export class ReminderService {
             this.scheduleTask(reminder);
         }
     }
-    /**
-     * リマインダー編集時に元のReplyメッセージを更新する
-     */
     public async updateOriginalMessageAsEdited(
         reminder: Reminder,
     ): Promise<void> {
-        if (
-            !this.client ||
-            !reminder.replyMessageId ||
-            !reminder.replyChannelId
-        ) {
-            return;
-        }
-
-        try {
-            const channel = await this.client.channels.fetch(
-                reminder.replyChannelId,
-            );
-            if (channel?.isTextBased()) {
-                const message = await channel.messages.fetch(
-                    reminder.replyMessageId,
-                );
-                await message.edit({
-                    embeds: [buildReminderEmbed(reminder)],
-                    components: [buildReminderButtons(reminder.id)],
-                });
-            }
-        } catch (error) {
-            logger.debug("元メッセージの更新に失敗（無視）:", error);
-        }
+        await this.updateOriginalMessage(
+            reminder,
+            buildReminderEmbed(reminder),
+            [buildReminderButtons(reminder.id)],
+        );
     }
 
     private scheduleTask(reminder: Reminder) {

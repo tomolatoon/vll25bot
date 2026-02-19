@@ -13,7 +13,8 @@ export const reloadHandler: ButtonHandler = {
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
         await interaction.deferUpdate();
-        const reminderId = interaction.customId.split(":")[1];
+        const [, reminderId] = interaction.customId.split(":");
+        if (!reminderId) return;
         const reminder = await reminderService.getReminderById(reminderId);
 
         if (!reminder) {

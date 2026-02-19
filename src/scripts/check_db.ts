@@ -1,5 +1,5 @@
 import { db } from "@db/client";
-import type { Reminder } from "@features/remind/types";
+import type { Reminder } from "@db/types";
 import { logger } from "@utils/logger";
 
 type ReminderRow = Reminder;

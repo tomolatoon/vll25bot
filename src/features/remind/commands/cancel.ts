@@ -33,6 +33,11 @@ async function execute(interaction: ChatInputCommandInteraction) {
             await interaction.editReply({
                 content: "❌ 自分が登録したリマインダーのみ解除できます。",
             });
+        } else if (result.reason === "conflict") {
+            await interaction.editReply({
+                content:
+                    "⚠️ このリマインダーは他の操作と競合しました。最新の状態を確認してから再度お試しください。",
+            });
         } else {
             await interaction.editReply({
                 content: `❓ リマインダー \`${id}\` は既に解除済みか存在しません。`,

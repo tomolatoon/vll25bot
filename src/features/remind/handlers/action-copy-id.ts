@@ -6,7 +6,8 @@ export const copyIdHandler: ButtonHandler = {
     idPrefix: BUTTON_ID_REMIND_COPY_ID,
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
-        const reminderId = interaction.customId.split(":")[1];
+        const [, reminderId] = interaction.customId.split(":");
+        if (!reminderId) return;
         await interaction.reply({
             content: `\`${reminderId}\``,
             flags: MessageFlags.Ephemeral,

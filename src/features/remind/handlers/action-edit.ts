@@ -8,7 +8,8 @@ export const editHandler: ButtonHandler = {
     idPrefix: BUTTON_ID_REMIND_EDIT,
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
-        const reminderId = interaction.customId.split(":")[1];
+        const [, reminderId] = interaction.customId.split(":");
+        if (!reminderId) return;
 
         // バリデーション（所有権確認など）
         const validation = await validateReminderForUpdate(

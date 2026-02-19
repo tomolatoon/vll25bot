@@ -2,8 +2,8 @@ import type { ButtonHandler } from "@core/types";
 import { type ButtonInteraction, MessageFlags } from "discord.js";
 import { buildEditReminderModal } from "../components/modals";
 import { LIST_EDIT_PREFIX } from "../constants";
-import { reminderService } from "../services/reminder-service";
 import { decodeState } from "../utils/list";
+import { validateReminderForUpdate } from "../utils/validation";
 
 export const listEditHandler: ButtonHandler = {
     idPrefix: LIST_EDIT_PREFIX,
@@ -17,29 +17,23 @@ export const listEditHandler: ButtonHandler = {
             interaction.user.id,
         );
         if (selectedId) {
-            // 編集ロジック（モーダル表示）
-            const reminder = await reminderService.getReminderById(selectedId);
-            if (reminder) {
-                if (reminder.createdBy !== interaction.user.id) {
-                    await interaction.reply({
-                        content:
-                            "❌ 自分が登録したリマインダーのみ編集できます。",
-                        flags: MessageFlags.Ephemeral,
-                    });
-                    return;
-                }
-                // モーダル作成
-                const modal = buildEditReminderModal(
-                    selectedId,
-                    reminder.message,
-                );
-                await interaction.showModal(modal);
-            } else {
+            const validation = await validateReminderForUpdate(
+                selectedId,
+                interaction.user.id,
+                interaction.guildId,
+            );
+            if (!validation.success) {
                 await interaction.reply({
-                    content: "❌ リマインダーが見つかりません。",
+                    content: `❌ ${validation.error}`,
                     flags: MessageFlags.Ephemeral,
                 });
+                return;
             }
+            const modal = buildEditReminderModal(
+                selectedId,
+                validation.reminder.message,
+            );
+            await interaction.showModal(modal);
         }
     },
 };

@@ -10,7 +10,8 @@ export const cancelHandler: ButtonHandler = {
     idPrefix: BUTTON_ID_REMIND_CANCEL,
     type: "BUTTON",
     async execute(interaction: ButtonInteraction) {
-        const reminderId = interaction.customId.split(":")[1];
+        const [, reminderId] = interaction.customId.split(":");
+        if (!reminderId) return;
 
         // 検証
         const validation = await validateReminderForUpdate(
@@ -28,36 +29,10 @@ export const cancelHandler: ButtonHandler = {
 
         const reminder = validation.reminder;
 
-        // 削除実行
+        // 削除実行（内部で元のReplyメッセージも「キャンセル済み」に更新される）
         await reminderService.delete(reminderId);
 
-        // キャンセル状態を表示するためにメッセージを更新
-        // まず、元の登録メッセージ（もしあれば）を更新する
-        // ただし、今押されたボタンのメッセージと同じ場合は editReply で更新されるのでスキップする
-        if (
-            reminder.replyMessageId &&
-            reminder.replyChannelId &&
-            reminder.replyMessageId !== interaction.message.id
-        ) {
-            try {
-                const channel = await interaction.client.channels.fetch(
-                    reminder.replyChannelId,
-                );
-                if (channel?.isTextBased()) {
-                    const message = await channel.messages.fetch(
-                        reminder.replyMessageId,
-                    );
-                    await message.edit({
-                        embeds: [buildCancelEmbed(reminder)],
-                        components: [buildCancelledButtons(reminder.id)],
-                    });
-                }
-            } catch (error) {
-                // エラーは無視（メッセージが既に削除されている場合など）
-            }
-        }
-
-        // 次に、インタラクション元のメッセージを更新する
+        // インタラクション元のメッセージを更新
         await interaction.update({
             content: "",
             embeds: [buildCancelEmbed(reminder)],

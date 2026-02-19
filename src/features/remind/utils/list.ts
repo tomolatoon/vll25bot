@@ -5,11 +5,15 @@ import {
     LIST_ORDER_PREFIX,
     LIST_PREFIXES,
 } from "../constants";
-import type { Reminder } from "../types";
+import type { Reminder } from "@db/types";
 
 export const REMINDERS_PER_PAGE = 5;
 
 export type SortOrder = "asc" | "desc";
+
+function parseSortOrder(value: string | undefined): SortOrder {
+    return value === "asc" || value === "desc" ? value : "asc";
+}
 
 export interface ListState {
     page: number;
@@ -45,7 +49,7 @@ export function decodeState(
         prefix: parts[0],
         state: {
             page: Number.parseInt(parts[1], 10),
-            order: parts[2] as SortOrder,
+            order: parseSortOrder(parts[2]),
             channelId: defaultChannelId,
             userId: defaultUserId,
             guildId,
