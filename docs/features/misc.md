@@ -28,7 +28,7 @@
 「閑話休題」と表示します．
 
 ```
-/kanwa [space](opt) [reasion](opt) [times](opt)
+/kanwa [space](opt) [reason](opt) [times](opt)
 ```
 
 - `space`: 間に入れる空白の数 (デフォルト: 5)

@@ -1,5 +1,4 @@
 import type { ModalHandler } from "@core/types";
-import { logger } from "@utils/logger";
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import { LIST_PAGE_JUMP_PREFIX } from "../constants";
 import { buildReminderListView } from "../services/renderer";

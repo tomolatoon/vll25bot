@@ -20,15 +20,16 @@ const editModalHandler: ModalHandler = {
         const newMessage = interaction.fields.getTextInputValue("message");
         const datetimeStr = interaction.fields.getTextInputValue("datetime");
 
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         // 所有権確認（元のデータ取得も兼ねる）
         const ownerValidation = await validateReminderForUpdate(
             reminderId,
             interaction.user.id,
         );
         if (!ownerValidation.success) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: `❌ ${ownerValidation.error}`,
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -37,9 +38,8 @@ const editModalHandler: ModalHandler = {
         // 日時検証
         const dateValidation = validateDateTimeInput(datetimeStr || undefined);
         if (!dateValidation.success) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: `❌ ${dateValidation.error}`,
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -52,10 +52,9 @@ const editModalHandler: ModalHandler = {
             });
 
             if (!updated) {
-                await interaction.reply({
+                await interaction.editReply({
                     content:
                         "❌ リマインダーの更新に失敗しました（見つからないか、権限がありません）。",
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -76,24 +75,21 @@ const editModalHandler: ModalHandler = {
 
             const responseEmbed = buildUpdateResponseEmbed(updated, changes);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [responseEmbed],
-                flags: MessageFlags.Ephemeral,
             });
         } catch (error) {
             // 楽観的ロック競合エラー
             if (error instanceof ConcurrencyError) {
-                await interaction.reply({
+                await interaction.editReply({
                     content:
                         "⚠️ このリマインダーは他のユーザーによって更新されました。\n最新のデータを確認してから再度編集してください。",
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
             // その他のエラー
-            await interaction.reply({
+            await interaction.editReply({
                 content: "❌ 予期しないエラーが発生しました。",
-                flags: MessageFlags.Ephemeral,
             });
         }
     },

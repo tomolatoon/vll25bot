@@ -6,7 +6,6 @@ import {
     REMIND_COLOR_ERROR,
     REMIND_COLOR_INFO,
     REMIND_COLOR_SUCCESS,
-    REMIND_COLOR_WARN,
 } from "../constants";
 import type { ListState } from "../utils/list";
 

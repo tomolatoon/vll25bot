@@ -12,6 +12,8 @@ export const listCancelHandler: ButtonHandler = {
     async execute(interaction: ButtonInteraction) {
         if (!interaction.guildId) return;
 
+        await interaction.deferUpdate();
+
         const { state, selectedId } = decodeState(
             interaction.customId,
             interaction.guildId,
@@ -27,7 +29,7 @@ export const listCancelHandler: ButtonHandler = {
             );
 
             if (!validation.success) {
-                await interaction.reply({
+                await interaction.followUp({
                     content: `❌ ${validation.error}`,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -44,7 +46,7 @@ export const listCancelHandler: ButtonHandler = {
             state,
         );
 
-        await interaction.update({
+        await interaction.editReply({
             embeds: [embed],
             components: components,
         });

@@ -10,7 +10,7 @@
 0. **Bot** セクションでBotを作成し、Tokenをコピー
 0. **Installation > Default Install Settings > Guild Install** で必要な権限を設定
    - **Scopes**: `bot`, `applications.commands`
-   - **Permissions**: 面倒なので `Administrator` にしがち
+   - **Permissions**: いい感じにしてください
 1. **Bot > Privileged Gateway Intents** を必要に応じて有効化
 2. 生成されたURLでBotをサーバーに招待
 

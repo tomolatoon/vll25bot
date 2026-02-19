@@ -59,6 +59,7 @@ export function buildReminderButtons(
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
         editButton,
         copyIdButton,
+        reloadButton,
         cancelButton,
     );
 }

@@ -16,7 +16,7 @@
 - `error`: 例外をハンドリングした場合
 
 ```typescript
-import { logger } from "/src/lib/logger";
+import { logger } from "@utils/logger";
 
 logger.info("Hello");
 logger.warn("World");

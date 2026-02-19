@@ -4,7 +4,8 @@
       "Bash(bunx tsc:*)",
       "Bash(bun format:*)",
       "Bash(bun lint-fix:*)",
-      "Bash(bun test:*)"
+      "Bash(bun test:*)",
+      "Bash(bun lint:*)"
     ]
   }
 }
