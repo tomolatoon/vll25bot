@@ -237,16 +237,6 @@ const dayOnlyNum: Parser<DateTimeComponents> = map(integer, (d) =>
  */
 const dayOnly: Parser<DateTimeComponents> = or([dayOnlyJp, dayOnlyNum]);
 
-/**
- * 絶対日付パーサ (優先順位: 年月日 > 月日 > 日のみ)
- * <AbsoluteDate> ::= <FullDate> | <MonthDay> | <DayOnly>
- */
-const absoluteDate: Parser<DateTimeComponents> = or([
-    fullDate,
-    monthDay,
-    dayOnly,
-]);
-
 // ============================================================================
 // 日本語日付オフセット (JpDateOffset)
 // <JpDateOffset> ::= <Integer> <JpPeriodUnit> "後"

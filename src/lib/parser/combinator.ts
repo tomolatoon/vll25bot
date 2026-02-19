@@ -132,9 +132,9 @@ type RepFunc = <T>(p: Parser<T>, min?: number, max?: number) => Parser<T[]>;
 export const rep: RepFunc =
     (p, min = 0, max = Number.POSITIVE_INFINITY) =>
     (input) => {
-        if (min > max) throw new Error("rep: min > max is not allowed.");
-        if (min < 0) throw new Error("rep: negative min is not allowed.");
-        if (max < 0) throw new Error("rep: negative max is not allowed.");
+        if (min > max) throw new Error("rep: min > max は許可されていません");
+        if (min < 0) throw new Error("rep: min に負の値は許可されていません");
+        if (max < 0) throw new Error("rep: max に負の値は許可されていません");
 
         const rs: ParserData<typeof p>[] = [];
         let i = input;

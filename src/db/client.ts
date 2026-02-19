@@ -1,28 +1,21 @@
 import { Database as SQLite } from "bun:sqlite";
-import { DB_FILE_PATH } from "../constants";
-import { logger } from "../utils/logger";
+import { DB_FILE_PATH } from "@/constants";
+import { logger } from "@utils/logger";
 
-/**
- * リマインダーのスキーマ定義
- */
-export interface ReminderRow {
-    id: string;
-    channelId: string;
-    message: string;
-    remindAt: number; // Unix Timestamp (ms)
-    createdAt: number; // Unix Timestamp (ms)
-    createdBy: string;
-    guildId: string;
-    replyMessageId?: string; // リプライメッセージのID (nullable)
-    replyChannelId?: string; // リプライメッセージのチャンネルID (nullable)
-}
-
-export class Database {
+export class DatabaseClient {
     private db: SQLite;
+    private static instance: DatabaseClient;
 
-    constructor() {
+    private constructor() {
         this.db = new SQLite(DB_FILE_PATH);
         this.init();
+    }
+
+    public static getInstance(): DatabaseClient {
+        if (!DatabaseClient.instance) {
+            DatabaseClient.instance = new DatabaseClient();
+        }
+        return DatabaseClient.instance;
     }
 
     private init() {
@@ -37,7 +30,8 @@ export class Database {
                 createdBy TEXT NOT NULL,
                 guildId TEXT NOT NULL,
                 replyMessageId TEXT,
-                replyChannelId TEXT
+                replyChannelId TEXT,
+                version INTEGER NOT NULL DEFAULT 0
             );
         `);
         // インデックス作成（検索高速化）
@@ -47,14 +41,11 @@ export class Database {
 
         // マイグレーション: 既存テーブルに新しいカラムを追加
         this.migrateAddReplyMessageColumns();
+        this.migrateAddVersionColumn();
     }
 
-    /**
-     * マイグレーション: replyMessageId と replyChannelId カラムを追加
-     */
     private migrateAddReplyMessageColumns() {
         try {
-            // カラムが存在するかチェック
             const tableInfo = this.db
                 .query("PRAGMA table_info(reminders)")
                 .all() as Array<{
@@ -81,9 +72,27 @@ export class Database {
         }
     }
 
-    /**
-     * クエリ実行 (SELECT)
-     */
+    private migrateAddVersionColumn() {
+        try {
+            const tableInfo = this.db
+                .query("PRAGMA table_info(reminders)")
+                .all() as Array<{
+                name: string;
+            }>;
+            const hasVersion = tableInfo.some((col) => col.name === "version");
+
+            if (!hasVersion) {
+                logger.info("🔄 マイグレーション: version カラムを追加中...");
+                this.db.run(
+                    "ALTER TABLE reminders ADD COLUMN version INTEGER NOT NULL DEFAULT 0",
+                );
+                logger.info("✅ マイグレーション完了");
+            }
+        } catch (error) {
+            logger.error("❌ version カラムのマイグレーション失敗:", error);
+        }
+    }
+
     query<T = unknown>(
         sql: string,
         params: (string | number | boolean | null)[] = [],
@@ -91,9 +100,6 @@ export class Database {
         return this.db.query(sql).all(...params) as T[];
     }
 
-    /**
-     * クエリ実行 (単一行取得)
-     */
     get<T = unknown>(
         sql: string,
         params: (string | number | boolean | null)[] = [],
@@ -101,20 +107,31 @@ export class Database {
         return this.db.query(sql).get(...params) as T | null;
     }
 
-    /**
-     * コマンド実行 (INSERT, UPDATE, DELETE)
-     */
-    run(sql: string, params: (string | number | boolean | null)[] = []) {
-        this.db.run(sql, params);
+    run(
+        sql: string,
+        params: (string | number | boolean | null)[] = [],
+    ): {
+        changes: number;
+        lastInsertRowid: number | bigint;
+    } {
+        const stmt = this.db.prepare(sql);
+        const result = stmt.run(...params);
+        return {
+            changes: result.changes,
+            lastInsertRowid: result.lastInsertRowid,
+        };
     }
 
     /**
-     * プリペアドステートメント用
+     * トランザクション内で複数のDB操作を実行する
+     * @param fn - トランザクション内で実行する関数
+     * @returns 関数の戻り値
+     * @throws トランザクション内でエラーが発生した場合、ロールバックして例外をスロー
      */
-    prepare(sql: string) {
-        return this.db.prepare(sql);
+    public transaction<T>(fn: () => T): T {
+        return this.db.transaction(fn)();
     }
 }
 
 // シングルトン
-export const db = new Database();
+export const db = DatabaseClient.getInstance();
