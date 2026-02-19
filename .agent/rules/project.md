@@ -11,7 +11,7 @@ trigger: always_on
 | Language   | TypeScript (strict mode)         |
 | Runtime    | Bun                              |
 | Framework  | Discord.js                       |
-| DB         | Drizzle ORM + SQLite             |
+| DB         | bun:sqlite (direct, no ORM)      |
 | Priorities | Maintainability, Type Safety     |
 
 ## Directory Structure

@@ -5,7 +5,7 @@ description: 新しいフィーチャーの追加手順
 ```
 Step 1: Create `src/features/[name]/` directory
 Step 2: Create `constants.ts` — define ALL constants (IDs, colors, timers, limits) upfront
-Step 3: Create `types.ts` — define feature-specific types (if needed)
+Step 3: Create `types.ts` — define feature-specific types (if needed; do NOT create solely to re-export from `@db/types`)
 Step 4: Implement commands in `commands/`
 Step 5: Implement handlers in `handlers/` — use constants for `idPrefix`
 Step 6: Implement services in `services/` (if domain logic needed)

@@ -36,7 +36,7 @@ Each feature directory under `src/features/[name]/` follows this pattern:
 | `components/` | UI builders (embeds, action rows, modals) | If needed |
 | `utils/` | Feature-specific helper functions | If needed |
 | `constants.ts` | **All** constants for this feature (see [coding-rules.md](coding-rules.md)) | Yes |
-| `types.ts` | Feature-specific type definitions | If needed |
+| `types.ts` | Feature-specific type definitions (**only** when the feature defines its own types; do NOT create it solely to re-export types from `@db/types` or another layer — import from the source directly) | If needed |
 | `setup.ts` | Register event listeners on client ready | If needed |
 
 ## Setup Pattern

@@ -58,8 +58,9 @@ src/features/
     ├── services/         # ビジネスロジック
     ├── utils/            # 機能固有のユーティリティ
     ├── constants.ts      # 定数定義 (ID, カラー, タイマー, 表示制限)
-    ├── setup.ts          # イベントハンドラー登録
-    └── types.ts          # 型定義
+    └── setup.ts          # イベントハンドラー登録
+    # ※ types.ts は feature 固有の型を定義する場合のみ作成する
+    # ※ DB層の型 (Reminder 等) は @db/types から直接インポートする
 ```
 
 ### `src/lib/`

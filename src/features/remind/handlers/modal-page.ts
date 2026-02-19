@@ -9,9 +9,6 @@ export const pageJumpModalHandler: ModalHandler = {
     idPrefix: LIST_PAGE_JUMP_PREFIX,
     type: "MODAL",
     async execute(interaction: ModalSubmitInteraction) {
-        logger.info(
-            `🔍 pageJumpModalHandler executing. customId: ${interaction.customId}`,
-        );
         if (!interaction.guildId) return;
 
         const input = interaction.fields.getTextInputValue("page");

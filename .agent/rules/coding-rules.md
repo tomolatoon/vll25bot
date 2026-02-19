@@ -114,6 +114,79 @@ idPrefix: BUTTON_ID_REMIND_EDIT,
 
 ---
 
+## customId Parsing Pattern
+
+When extracting arguments from a `customId` string (format: `prefix:arg1:arg2:...`), always use destructuring assignment with an undefined guard:
+
+```typescript
+// ❌ Bad — [1] may be undefined, no guard
+const reminderId = interaction.customId.split(":")[1];
+
+// ✅ Good — destructuring + early return
+const [, reminderId] = interaction.customId.split(":");
+if (!reminderId) return;
+```
+
+This applies to all `ButtonHandler`, `ModalHandler`, and `SelectMenuHandler` implementations.
+
+---
+
+## Handler Validation Pattern
+
+Handlers that operate on a user-owned resource MUST use the shared validation utility instead of re-implementing ownership checks manually.
+
+```typescript
+// ❌ Bad — manual, duplicates logic, misses guildId check
+const reminder = await reminderService.getReminderById(id);
+if (reminder.createdBy !== interaction.user.id) { ... }
+
+// ✅ Good — centralised, consistent, includes guildId check
+const validation = await validateReminderForUpdate(id, interaction.user.id, interaction.guildId);
+if (!validation.success) {
+    await interaction.reply({ content: `❌ ${validation.error}`, flags: MessageFlags.Ephemeral });
+    return;
+}
+const reminder = validation.reminder; // already fetched, no extra DB round-trip
+```
+
+---
+
+## Service vs Handler Responsibility
+
+Service methods (e.g., `delete()`, `cancel()`) are responsible for **their own side-effects** — including updating the original reply message.
+
+Handlers **MUST NOT duplicate** this by fetching and editing the same Discord message themselves.
+
+```typescript
+// ❌ Bad — handler re-fetches and edits replyMessageId that service already updated
+await reminderService.delete(id);
+const ch = await interaction.client.channels.fetch(reminder.replyChannelId);
+await (await ch.messages.fetch(reminder.replyMessageId)).edit(...); // duplicate!
+
+// ✅ Good — service handles replyMessage, handler only updates the interaction message
+await reminderService.delete(id);
+await interaction.update({ embeds: [...], components: [...] });
+```
+
+---
+
+## Type Import Policy
+
+Import types directly from the layer that defines them. Do **not** create pass-through re-export files.
+
+```typescript
+// ❌ Bad — a re-export file that adds no value
+// features/remind/types.ts: export type { Reminder } from "@db/types";
+import type { Reminder } from "../types"; // indirection for nothing
+
+// ✅ Good — import from the source
+import type { Reminder } from "@db/types";
+```
+
+`types.ts` in a feature directory should only exist when the feature **defines its own types**. If it only re-exports from another layer, delete it and import directly.
+
+---
+
 ## Language Policy — Japanese Only
 
 All human-readable text in the codebase MUST be written in **Japanese**.
